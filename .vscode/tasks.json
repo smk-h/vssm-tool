@@ -31,9 +31,23 @@
       }
     },
     {
+      "label": "npmRunBuildWebview",
+      "type": "npm",
+      "script": "build:webview",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "silent"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
       "label": "run-build",
       "dependsOrder": "sequence",
       "dependsOn": [
+        "npmRunBuildWebview",
         "npmRunWatch",
         "npmRunPostbuild"
       ],
