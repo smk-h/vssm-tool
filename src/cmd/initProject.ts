@@ -11,6 +11,8 @@ const projectTypes = [
 /**
  * @brief 初始化C语言工程
  * @details 将扩展内置模板目录src/template/c-vscode/下的所有文件及目录直接拷贝到工作区根目录。
+ *          其中.clang-format不再使用模板目录中的同名文件，而是从扩展内置的DefaultTemplate.clang-format拷贝，
+ *          以保证与单独生成.clang-format命令使用同一份C语言模板。
  *          若目标位置已存在同名文件或目录则跳过。
  * @param context VS Code扩展上下文，用于获取扩展路径等信息
  * @param templateLabel 项目类型的显示标签，用于日志和提示信息（如"C (VSCode)"）
@@ -38,6 +40,11 @@ function initCVscodeProject(context: vscode.ExtensionContext, templateLabel: str
     let copied = false;
 
     for (const entry of entries) {
+      // .clang-format改用扩展内置的DefaultTemplate.clang-format，跳过模板目录中的同名文件
+      if (entry === '.clang-format') {
+        continue;
+      }
+
       const srcPath = path.join(templateDir, entry);
       const destPath = path.join(targetRoot, entry);
 
@@ -52,6 +59,16 @@ function initCVscodeProject(context: vscode.ExtensionContext, templateLabel: str
       } else {
         fs.copyFileSync(srcPath, destPath);
       }
+      copied = true;
+    }
+
+    // 使用扩展内置的DefaultTemplate.clang-format作为.clang-format
+    const clangFormatSrc = path.resolve(__dirname, '..', 'DefaultTemplate.clang-format');
+    const clangFormatDest = path.join(targetRoot, '.clang-format');
+    if (fs.existsSync(clangFormatDest)) {
+      skipped = true;
+    } else if (fs.existsSync(clangFormatSrc)) {
+      fs.copyFileSync(clangFormatSrc, clangFormatDest);
       copied = true;
     }
 
