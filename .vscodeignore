@@ -21,3 +21,10 @@ webview-ui/src/**
 webview-ui/node_modules/**
 webview-ui/index.html
 webview-ui/vite.config.ts
+
+# 扩展运行时无任何 npm 依赖（package.json 仅含 devDependencies，src 仅依赖
+# vscode 与 Node 内置模块；webview 的 React 已由 Vite 打包进 dist），
+# 故整个 node_modules 不打包。同时避免 npm workspaces 在
+# node_modules/@vssm-tool/webview-ui 创建的符号链接导致 vsce/yazl 打包报
+# "not a file" 错误。
+node_modules/**
