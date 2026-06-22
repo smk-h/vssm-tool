@@ -13,19 +13,23 @@ const projectTypes = [
  * @details 键为工作区目标文件名，值为源文件路径（相对扩展 out 根目录）。
  *          列入此表的目标不从模板目录按原名拷贝，而是从指定源文件拷贝到目标名。
  *          - .clang-format：与单独生成命令共用 DefaultTemplate.clang-format，保证同一份C语言模板；
- *          - .gitignore：源文件命名为 C.gitignore，避免在扩展仓库中被当作忽略文件。
+ *          - .gitignore：源文件命名为 C.gitignore，避免在扩展仓库中被当作忽略文件；
+ *          - README.md：从扩展内置 DefaultTemplate.README.md 拷贝。
  */
 const cVscodeSpecialTargets: Record<string, string> = {
   '.clang-format': 'DefaultTemplate.clang-format',
-  '.gitignore': path.join('template', 'c-vscode', 'C.gitignore')
+  '.gitignore': path.join('template', 'c-vscode', 'C.gitignore'),
+  'README.md': 'DefaultTemplate.README.md'
 };
 
 /**
  * @brief CNB工程初始化的特殊目标名映射表
- * @details .editorconfig 从扩展内置的 DefaultTemplate.editorconfig 拷贝，与单独生成命令共用同一份模板。
+ * @details .editorconfig 从扩展内置的 DefaultTemplate.editorconfig 拷贝，与单独生成命令共用同一份模板；
+ *          README.md 从扩展内置的 DefaultTemplate.README.md 拷贝。
  */
 const cnbSpecialTargets: Record<string, string> = {
-  '.editorconfig': 'DefaultTemplate.editorconfig'
+  '.editorconfig': 'DefaultTemplate.editorconfig',
+  'README.md': 'DefaultTemplate.README.md'
 };
 
 /**
