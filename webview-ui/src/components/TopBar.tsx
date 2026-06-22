@@ -1,7 +1,8 @@
 /**
  * @brief 顶栏：左侧标题（随当前视图变）+ 右侧刷新按钮（树视图模式）+ 设置齿轮
- * @details 齿轮使用 VS Code Codicon 的 settings-gear 路径（内联 SVG，无需字体依赖）。
- *          刷新按钮用 feather 风格 refresh-cw 路径，仅当 onRefresh 传入（即非 chat 模式）时显示。
+ * @details 两个图标均使用 VS Code Codicon 路径（内联 SVG，16×16、fill，无需字体依赖）：
+ *          刷新用 codicon `refresh`，齿轮用 codicon `settings-gear`，与 VS Code 内置工具栏观感一致。
+ *          刷新按钮仅当 onRefresh 传入（即非 chat 模式）时显示。
  */
 interface TopBarProps {
   title: string;
@@ -18,10 +19,12 @@ export default function TopBar({ title, railOpen, onToggleRail, onRefresh }: Top
       <span className="topbar-actions">
         {onRefresh && (
           <button className="icon-btn" onClick={onRefresh} title="刷新" aria-label="刷新">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="23 4 23 10 17 10" />
-              <polyline points="1 20 1 14 7 14" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            <svg viewBox="0 0 16 16" fill="currentColor">
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M4.681 3H2V2h3.5l.5.5V6H5V4a5 5 0 1 0 4.53-.762l.302-.954A6 6 0 1 1 4.681 3z"
+              />
             </svg>
           </button>
         )}
