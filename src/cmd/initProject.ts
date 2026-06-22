@@ -9,13 +9,31 @@ const projectTypes = [
 ];
 
 /**
+ * @brief C工程初始化的特殊目标名映射表
+ * @details 键为工作区目标文件名，值为源文件路径（相对扩展 out 根目录）。
+ *          列入此表的目标不从模板目录按原名拷贝，而是从指定源文件拷贝到目标名。
+ *          - .clang-format：与单独生成命令共用 DefaultTemplate.clang-format，保证同一份C语言模板；
+ *          - .gitignore：源文件命名为 C.gitignore，避免在扩展仓库中被当作忽略文件。
+ */
+const cVscodeSpecialTargets: Record<string, string> = {
+  '.clang-format': 'DefaultTemplate.clang-format',
+  '.gitignore': path.join('template', 'c-vscode', 'C.gitignore')
+};
+
+/**
+ * @brief CNB工程初始化的特殊目标名映射表
+ * @details .editorconfig 从扩展内置的 DefaultTemplate.editorconfig 拷贝，与单独生成命令共用同一份模板。
+ */
+const cnbSpecialTargets: Record<string, string> = {
+  '.editorconfig': 'DefaultTemplate.editorconfig'
+};
+
+/**
  * @brief 初始化C语言工程
- * @details 将扩展内置模板目录src/template/c-vscode/下的所有文件及目录直接拷贝到工作区根目录。
- *          其中.clang-format不再使用模板目录中的同名文件，而是从扩展内置的DefaultTemplate.clang-format拷贝，
- *          以保证与单独生成.clang-format命令使用同一份C语言模板。
- *          模板目录中的C.gitignore会重命名为.gitignore拷贝到工作区根目录。
- *          若目标位置已存在同名文件或目录则跳过。
- * @param context VS Code扩展上下文，用于获取扩展路径等信息
+ * @details 将扩展内置模板目录src/template/c-vscode/下的所有文件及目录拷贝到工作区根目录，
+ *          其中 cVscodeSpecialTargets 中配置的目标名（.clang-format、.gitignore）做特殊处理，
+ *          其余条目按同名拷贝。若目标位置已存在同名文件或目录则跳过。
+ * @param context VS Code扩展上下文（保留以备扩展使用）
  * @param templateLabel 项目类型的显示标签，用于日志和提示信息（如"C (VSCode)"）
  * @return 无返回值
  */
@@ -36,62 +54,12 @@ function initCVscodeProject(context: vscode.ExtensionContext, templateLabel: str
   }
 
   try {
-    const entries = fs.readdirSync(templateDir);
-    let skipped = false;
-    let copied = false;
+    const result = copyTemplateTree(templateDir, targetRoot, cVscodeSpecialTargets);
 
-    for (const entry of entries) {
-      // .clang-format改用扩展内置的DefaultTemplate.clang-format，跳过模板目录中的同名文件
-      if (entry === '.clang-format') {
-        continue;
-      }
-
-      // C.gitignore在拷贝时重命名为.gitignore，跳过常规同名拷贝逻辑
-      if (entry === 'C.gitignore') {
-        continue;
-      }
-
-      const srcPath = path.join(templateDir, entry);
-      const destPath = path.join(targetRoot, entry);
-
-      if (fs.existsSync(destPath)) {
-        skipped = true;
-        continue;
-      }
-
-      const stat = fs.statSync(srcPath);
-      if (stat.isDirectory()) {
-        copyDirSync(srcPath, destPath);
-      } else {
-        fs.copyFileSync(srcPath, destPath);
-      }
-      copied = true;
-    }
-
-    // 使用扩展内置的DefaultTemplate.clang-format作为.clang-format
-    const clangFormatSrc = path.resolve(__dirname, '..', 'DefaultTemplate.clang-format');
-    const clangFormatDest = path.join(targetRoot, '.clang-format');
-    if (fs.existsSync(clangFormatDest)) {
-      skipped = true;
-    } else if (fs.existsSync(clangFormatSrc)) {
-      fs.copyFileSync(clangFormatSrc, clangFormatDest);
-      copied = true;
-    }
-
-    // 模板目录中的C.gitignore拷贝为.gitignore（源文件命名避免在扩展仓库中被当作忽略文件）
-    const gitignoreSrc = path.join(templateDir, 'C.gitignore');
-    const gitignoreDest = path.join(targetRoot, '.gitignore');
-    if (fs.existsSync(gitignoreDest)) {
-      skipped = true;
-    } else if (fs.existsSync(gitignoreSrc)) {
-      fs.copyFileSync(gitignoreSrc, gitignoreDest);
-      copied = true;
-    }
-
-    if (copied) {
+    if (result.copied) {
       logToVssmToolChannel(`Successfully initialized ${templateLabel} project in: ${targetRoot}`);
       vscode.window.showInformationMessage(`${templateLabel} project initialized successfully!`);
-    } else if (skipped) {
+    } else if (result.skipped) {
       vscode.window.showWarningMessage(`${templateLabel} files already exist, skipping initialization.`);
     }
   } catch (err) {
@@ -147,9 +115,10 @@ export function registerInitProjectCommand(context: vscode.ExtensionContext): st
 
 /**
  * @brief 初始化CNB项目配置
- * @details 将扩展内置模板目录src/template/cnb/下的所有文件（不包含cnb这一层目录）拷贝到工作区根目录。
- *          若目标位置已存在同名文件则跳过。
- * @param context VS Code扩展上下文，用于获取扩展路径等信息
+ * @details 将扩展内置模板目录src/template/cnb/下的所有文件（不包含cnb这一层目录）拷贝到工作区根目录，
+ *          其中 cnbSpecialTargets 中配置的目标名（.editorconfig）从扩展内置 DefaultTemplate.editorconfig 拷贝，
+ *          其余条目按同名拷贝。若目标位置已存在同名文件则跳过。
+ * @param context VS Code扩展上下文（保留以备扩展使用）
  * @param templateLabel 项目类型的显示标签，用于日志和提示信息
  * @return 无返回值
  */
@@ -170,42 +139,12 @@ function initCnbProject(context: vscode.ExtensionContext, templateLabel: string)
   }
 
   try {
-    const entries = fs.readdirSync(templateDir);
-    let skipped = false;
-    let copied = false;
+    const result = copyTemplateTree(templateDir, targetRoot, cnbSpecialTargets);
 
-    for (const entry of entries) {
-      const srcPath = path.join(templateDir, entry);
-      const destPath = path.join(targetRoot, entry);
-
-      if (fs.existsSync(destPath)) {
-        skipped = true;
-        continue;
-      }
-
-      const stat = fs.statSync(srcPath);
-      if (stat.isDirectory()) {
-        copyDirSync(srcPath, destPath);
-      } else {
-        fs.copyFileSync(srcPath, destPath);
-      }
-      copied = true;
-    }
-
-    // Copy DefaultTemplate.editorconfig as .editorconfig
-    const editorconfigSrc = path.resolve(__dirname, '..', 'DefaultTemplate.editorconfig');
-    const editorconfigDest = path.join(targetRoot, '.editorconfig');
-    if (fs.existsSync(editorconfigSrc) && !fs.existsSync(editorconfigDest)) {
-      fs.copyFileSync(editorconfigSrc, editorconfigDest);
-      copied = true;
-    } else if (fs.existsSync(editorconfigDest)) {
-      skipped = true;
-    }
-
-    if (copied) {
+    if (result.copied) {
       logToVssmToolChannel(`Successfully initialized ${templateLabel} project in: ${targetRoot}`);
       vscode.window.showInformationMessage(`${templateLabel} project initialized successfully!`);
-    } else if (skipped) {
+    } else if (result.skipped) {
       vscode.window.showWarningMessage(`${templateLabel} files already exist, skipping initialization.`);
     }
   } catch (err) {
@@ -213,6 +152,90 @@ function initCnbProject(context: vscode.ExtensionContext, templateLabel: string)
     logErrorToVssmToolChannel(`Failed to initialize CNB project: ${message}`);
     vscode.window.showErrorMessage(`Failed to initialize CNB project: ${message}`);
   }
+}
+
+/**
+ * @interface TemplateCopyResult
+ * @brief 模板目录拷贝结果
+ * @property copied 是否至少成功拷贝了一个文件或目录
+ * @property skipped 是否存在因目标已存在而被跳过的情况
+ */
+interface TemplateCopyResult {
+  copied: boolean;
+  skipped: boolean;
+}
+
+/**
+ * @brief 将模板目录拷贝到工作区根目录，支持特殊目标名映射
+ * @details 先遍历 templateDir 下所有文件及目录，按原名拷贝到 targetRoot；
+ *          再按 specialTargets 将指定源文件拷贝为目标名。
+ *          specialTargets 的键为目标文件名，值为源文件路径（相对扩展 out 根目录）。
+ *          若某特殊目标的源文件恰好位于 templateDir 内，则在常规遍历时自动跳过，避免重复拷贝。
+ *          目标位置已存在同名文件或目录时跳过。
+ * @param templateDir 模板目录的绝对路径
+ * @param targetRoot 工作区根目录的绝对路径
+ * @param specialTargets 特殊目标名到源文件（相对扩展 out 根目录）的映射表
+ * @return 返回拷贝结果
+ */
+function copyTemplateTree(
+  templateDir: string,
+  targetRoot: string,
+  specialTargets: Record<string, string>
+): TemplateCopyResult {
+  const extensionRoot = path.resolve(__dirname, '..');
+
+  // 收集位于模板目录内的特殊源文件名，常规遍历时跳过这些条目（避免重复拷贝）
+  const skipInTemplate = new Set<string>();
+  for (const srcRel of Object.values(specialTargets)) {
+    const srcAbs = path.resolve(extensionRoot, srcRel);
+    if (srcAbs.startsWith(`${templateDir}${path.sep}`)) {
+      skipInTemplate.add(path.basename(srcAbs));
+    }
+  }
+
+  let skipped = false;
+  let copied = false;
+
+  // 1) 常规拷贝：模板目录中未被特殊处理的条目按原名拷贝
+  for (const entry of fs.readdirSync(templateDir)) {
+    if (skipInTemplate.has(entry)) {
+      continue;
+    }
+
+    const srcPath = path.join(templateDir, entry);
+    const destPath = path.join(targetRoot, entry);
+
+    if (fs.existsSync(destPath)) {
+      skipped = true;
+      continue;
+    }
+
+    const stat = fs.statSync(srcPath);
+    if (stat.isDirectory()) {
+      copyDirSync(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+    copied = true;
+  }
+
+  // 2) 特殊目标：从指定源文件拷贝到对应目标名
+  for (const [destName, srcRel] of Object.entries(specialTargets)) {
+    const srcAbs = path.resolve(extensionRoot, srcRel);
+    const destPath = path.join(targetRoot, destName);
+
+    if (fs.existsSync(destPath)) {
+      skipped = true;
+      continue;
+    }
+
+    if (fs.existsSync(srcAbs)) {
+      fs.copyFileSync(srcAbs, destPath);
+      copied = true;
+    }
+  }
+
+  return { copied, skipped };
 }
 
 /**
