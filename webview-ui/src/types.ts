@@ -11,6 +11,8 @@ export interface SnapNode {
   icon?: string;
   collapsibleState: 'none' | 'collapsed' | 'expanded';
   children?: SnapNode[];
+  /** @brief 点击节点触发的命令（原样回传给扩展 executeCommand 执行） */
+  command?: { command: string; args?: unknown[] };
 }
 
 /** @brief 导航栏一个视图入口 */

@@ -13,7 +13,11 @@ interface NavRailProps {
 
 const GLYPH: Record<string, string> = {
   chat: '💬',
-  tree: '🗂'
+  tree: '🗂',
+  settings: '⚙',
+  file: '📄',
+  dep: '📦',
+  cmd: '⌘'
 };
 
 export default function NavRail({ views, mode, onSelect }: NavRailProps) {

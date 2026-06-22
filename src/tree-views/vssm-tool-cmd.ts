@@ -1,11 +1,13 @@
 /**
- * @file 命令视图模块，展示VSSM工具所有可用命令
+ * @file 命令视图模块，展示 VSSM 工具所有可用命令
  * @module views/commandsView
+ * @details 原本是一个原生 TreeView（vssm-tool-cmd），其内容现已搬进 chat webview 渲染，
+ *          故改为实现 SnapshottableProvider：供 webview 取快照，点击节点执行对应命令。
  */
 
-import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { registerSnapshottableProvider, type SnapNode, type SnapshottableProvider } from './registry';
 
 /**
  * @brief 命令信息接口
@@ -19,15 +21,17 @@ interface CommandInfo {
 }
 
 /**
- * @brief 命令树数据提供者类
- * @class CommandsTreeDataProvider
- * @implements {vscode.TreeDataProvider<CommandItem>}
+ * @class CommandsViewProvider
+ * @brief 命令视图提供者，实现 SnapshottableProvider 供 chat webview 消费
+ * @details 从扩展 package.json 的 contributes.commands 加载命令列表，
+ *          快照为单层 SnapNode[]，点击节点即执行该命令。
  */
-export class CommandsTreeDataProvider implements vscode.TreeDataProvider<CommandItem> {
-  private _onDidChangeTreeData = new vscode.EventEmitter<CommandItem | undefined>();
-  readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+export class CommandsViewProvider implements SnapshottableProvider {
+  /** @brief 对应原 view 的 id（webview 导航/快照路由用） */
+  public readonly viewId = 'vssm-tool-cmd';
 
-  private commands: CommandItem[] = [];
+  /** @brief 从 package.json 加载到的命令列表（纯数据） */
+  private commands: CommandInfo[] = [];
 
   /**
    * @brief 构造函数，初始化时加载命令
@@ -38,23 +42,29 @@ export class CommandsTreeDataProvider implements vscode.TreeDataProvider<Command
   }
 
   /**
-   * @brief 从package.json加载命令配置
+   * @brief 从 package.json 加载命令配置
    * @private
    */
-  private loadCommandsFromPackageJson() {
+  private loadCommandsFromPackageJson(): void {
     try {
-      // 获取package.json文件路径
+      // 获取 package.json 文件路径（out/tree-views → 根目录）
       const packageJsonPath = path.join(__dirname, '../../package.json');
-      // 读取并解析package.json文件内容
+      // 读取并解析 package.json 文件内容
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 
-      // 检查是否有contributes.commands配置
+      // 检查是否有 contributes.commands 配置
       if (packageJson.contributes?.commands) {
-        // 将命令配置转换为CommandItem对象数组
-        // 使用完整的命令ID作为显示标签
-        this.commands = packageJson.contributes.commands.map(
-          (cmd: CommandInfo) => new CommandItem(cmd.command, cmd.command)
-        );
+        // 按 command id 去重，防止 package.json 里误重复声明导致同一命令显示多次
+        const seen = new Set<string>();
+        this.commands = (packageJson.contributes.commands as CommandInfo[])
+          .filter((cmd) => {
+            if (seen.has(cmd.command)) {
+              return false;
+            }
+            seen.add(cmd.command);
+            return true;
+          })
+          .map((cmd) => ({ command: cmd.command, title: cmd.title }));
       }
     } catch (error) {
       // 捕获并记录加载错误
@@ -63,77 +73,33 @@ export class CommandsTreeDataProvider implements vscode.TreeDataProvider<Command
   }
 
   /**
-   * @brief 获取树节点
-   * @param {CommandItem} element - 命令项
-   * @returns {vscode.TreeItem}
+   * @brief 返回完整树快照（SnapshottableProvider 契约）
+   * @returns SnapNode[] 单层命令节点列表，可直接 postMessage 给 webview
    */
-  getTreeItem(element: CommandItem): vscode.TreeItem {
-    // 直接返回命令项对应的TreeItem
-    return element;
-  }
-
-  /**
-   * @brief 获取子节点
-   * @param {CommandItem} [element] - 父节点
-   * @returns {Thenable<CommandItem[]>}
-   */
-  getChildren(element?: CommandItem): Thenable<CommandItem[]> {
-    if (element) {
-      // 如果是子节点请求，返回空数组
-      return Promise.resolve([]);
-    }
-    // 返回所有命令项
-    return Promise.resolve(this.commands);
-  }
-
-  /**
-   * @brief 刷新命令树
-   */
-  refresh(): void {
-    // 触发树视图更新
-    this._onDidChangeTreeData.fire(undefined);
+  getSnapshot(): SnapNode[] {
+    return this.commands.map(
+      (cmd): SnapNode => ({
+        id: cmd.command,
+        label: cmd.title,
+        description: cmd.command,
+        icon: 'cmd',
+        collapsibleState: 'none',
+        // 点击节点执行该命令
+        command: { command: cmd.command }
+      })
+    );
   }
 }
 
 /**
- * @brief 命令项类
- * @class CommandItem
- * @extends vscode.TreeItem
+ * @brief 注册命令视图到 webview 快照注册表
+ * @param {unknown} _context - 扩展上下文（迁移后未使用，保留签名以契合 extension.ts 注册循环）
+ * @returns {string} viewId（供 extension.ts 去重注册使用）
+ * @details 注意：不再注册原生 TreeView（其内容已搬进 webview）。
+ *          仅创建实例并挂进 registry，让 chat webview 能取快照。
  */
-class CommandItem extends vscode.TreeItem {
-  /**
-   * @brief 构造函数
-   * @param {string} label - 显示标签
-   * @param {string} commandId - 命令ID
-   */
-  constructor(
-    public readonly label: string,
-    public readonly commandId: string
-  ) {
-    // 初始化TreeItem
-    super(label, vscode.TreeItemCollapsibleState.None);
-    // 设置命令属性
-    this.command = {
-      command: commandId,
-      title: label
-    };
-    // 设置上下文值
-    this.contextValue = 'command';
-    // 设置图标
-    this.iconPath = new vscode.ThemeIcon('symbol-method');
-  }
-}
-
-/**
- * @brief 注册命令视图
- * @param {vscode.ExtensionContext} context - 扩展上下文
- * @returns {string} 视图ID
- */
-export function registerCommandsView(context: vscode.ExtensionContext): string {
-  // 创建命令提供者实例
-  const commandsProvider = new CommandsTreeDataProvider();
-  // 注册树视图
-  context.subscriptions.push(vscode.window.registerTreeDataProvider('vssm-tool-cmd', commandsProvider));
-  // 返回视图ID
-  return 'vssm-tool-cmd';
+export function registerCommandsView(_context: unknown): string {
+  const provider = new CommandsViewProvider();
+  registerSnapshottableProvider(provider);
+  return provider.viewId;
 }

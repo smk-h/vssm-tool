@@ -19,6 +19,12 @@ export interface SnapNode {
   icon?: string;
   collapsibleState: 'none' | 'collapsed' | 'expanded';
   children?: SnapNode[];
+  /**
+   * @brief 点击节点触发的命令（webview 原样回传，扩展侧 executeCommand 执行）
+   * @details 只读 provider（config/cmd/template/settings/dependencies）用它表达
+   *          "点击打开文件 / 执行命令 / 打开设置 / 打开 npm"等动作；无则纯展示或仅可展开。
+   */
+  command?: { command: string; args?: unknown[] };
 }
 
 /**

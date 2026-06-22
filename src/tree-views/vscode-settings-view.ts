@@ -1,6 +1,8 @@
 /**
- * @file VSCode设置视图模块，展示VSCode所有可能的配置文件
+ * @file VSCode 设置视图模块，展示 VSCode 所有可能的配置文件
  * @module views/vscodeSettingsView
+ * @details 原本是一个原生 TreeView（vssm-tool-vscode-settings），其内容现已搬进 chat webview 渲染，
+ *          故改为实现 SnapshottableProvider：供 webview 取快照，点击文件节点打开对应设置文件。
  */
 
 import * as vscode from 'vscode';
@@ -8,172 +10,101 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { logToVssmToolChannel } from '../helpers/utils';
+import { registerSnapshottableProvider, type SnapNode, type SnapshottableProvider } from './registry';
 
 /**
- * @brief VSCode设置文件节点类
  * @class VSCodeSettingsNode
- * @extends vscode.TreeItem
- * @description 表示VSCode设置文件树中的节点，继承自vscode.TreeItem。
+ * @brief VSCode 设置文件节点（纯数据，供 webview 渲染）
+ * @description 迁移自原 extends vscode.TreeItem 的节点，仅保留快照所需的字段。
  */
-export class VSCodeSettingsNode extends vscode.TreeItem {
-  /**
-   * @brief 构造函数
-   * @param label 节点显示的标签
-   * @param filePath 文件的完整路径
-   * @param isDirectory 是否为目录
-   * @param description 节点描述
-   * @param parentPath 父目录路径（用于文件夹设置）
-   * @description 创建VSCode设置文件节点实例，设置节点的基本属性和命令。
-   */
+class VSCodeSettingsNode {
   constructor(
     public readonly label: string,
     public readonly filePath: string,
     public readonly isDirectory: boolean = false,
     public readonly description: string = '',
-    public readonly parentPath: string = ''
-  ) {
-    super(label, isDirectory ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
-
-    if (isDirectory) {
-      // 目录使用文件夹图标
-      this.iconPath = new vscode.ThemeIcon('folder');
-      this.contextValue = 'directory';
-    } else {
-      // 文件使用JSON图标
-      this.iconPath = new vscode.ThemeIcon('json');
-      this.contextValue = 'settings-file';
-      
-      // 设置悬停提示
-      this.tooltip = `Open ${this.label}${description ? '\n' + description : ''}`;
-
-      // 设置命令，点击时打开文件
-      this.command = {
-        command: 'vssm-tool-vscode-settings.openFile',
-        title: 'Open File',
-        arguments: [this]
-      };
-    }
-  }
+    public readonly parentPath: string = '',
+    public readonly contextValue: string = ''
+  ) {}
 }
 
 /**
- * @brief VSCode设置提供者类
  * @class VSCodeSettingsProvider
- * @implements vscode.TreeDataProvider<VSCodeSettingsNode>
- * @description 实现VS Code的TreeDataProvider接口，提供扫描到的VSCode设置文件。
+ * @brief VSCode 设置提供者，实现 SnapshottableProvider 供 chat webview 消费
+ * @description 扫描默认/用户/远程/工作区/文件夹级别的设置文件，快照为 SnapNode[]。
  */
-export class VSCodeSettingsProvider implements vscode.TreeDataProvider<VSCodeSettingsNode> {
-  // 存储设置文件节点
+export class VSCodeSettingsProvider implements SnapshottableProvider {
+  /** @brief 对应原 view 的 id（webview 导航/快照路由用） */
+  public readonly viewId = 'vssm-tool-vscode-settings';
+
+  /** @brief 根级设置文件节点 */
   private settingsNodes: VSCodeSettingsNode[] = [];
 
-  /**
-   * @brief 事件发射器，用于通知树视图数据已更改
-   * @description 当需要刷新树视图时，调用fire()方法触发此事件。
-   */
-  private _onDidChangeTreeData: vscode.EventEmitter<VSCodeSettingsNode | undefined | void> = new vscode.EventEmitter<
-    VSCodeSettingsNode | undefined | void
-  >();
+  /** @brief 确保已扫描过设置文件 */
+  private ensureScanned(): void {
+    if (this.settingsNodes.length === 0) {
+      this.scanSettingsFiles();
+    }
+  }
 
-  /**
-   * @brief 树视图数据更改事件
-   * @description VS Code通过此事件监听数据变化并更新UI。
-   */
-  readonly onDidChangeTreeData: vscode.Event<VSCodeSettingsNode | undefined | void> = this._onDidChangeTreeData.event;
-
-  /**
-   * @brief 刷新树视图
-   * @description 重新扫描设置文件并刷新视图
-   */
+  /** @brief webview 请求刷新：重新扫描 */
   refresh(): void {
+    this.settingsNodes = [];
     this.scanSettingsFiles();
-    this._onDidChangeTreeData.fire();
     logToVssmToolChannel('VSCode settings view refreshed!');
   }
 
   /**
-   * @brief 扫描VSCode设置文件
-   * @description 扫描所有可能的VSCode设置文件位置
+   * @brief 扫描 VSCode 设置文件，构建根级节点
+   * @private
    */
   private scanSettingsFiles(): void {
-    // 清空现有节点列表
     this.settingsNodes = [];
-
     try {
-      // 1. 默认配置文件（只读，显示为信息）
-      const defaultSettingsNode = new VSCodeSettingsNode(
-        'Default Settings',
-        '',  // 空路径，因为这是虚拟节点
-        false,
-        'VS Code default settings (read-only)'
+      // 1. 默认配置文件（只读，点击打开原始默认设置）
+      this.settingsNodes.push(
+        new VSCodeSettingsNode('Default Settings', '', false, 'VS Code default settings (read-only)', '', 'default-settings')
       );
-      // 为默认设置节点设置特殊图标和命令
-      defaultSettingsNode.iconPath = new vscode.ThemeIcon('info');
-      defaultSettingsNode.contextValue = 'default-settings';
-      // 保留命令，以便能响应点击事件
-      // 注意：这里我们依赖于 VSCodeSettingsNode 构造函数自动为非目录节点设置命令
-      this.settingsNodes.push(defaultSettingsNode);
 
       // 2. 用户配置文件
       const userSettingsPath = this.getUserSettingsPath();
       if (userSettingsPath && fs.existsSync(userSettingsPath)) {
-        this.settingsNodes.push(new VSCodeSettingsNode(
-          'User Settings',
-          userSettingsPath,
-          false,
-          'Global user settings'
-        ));
+        this.settingsNodes.push(
+          new VSCodeSettingsNode('User Settings', userSettingsPath, false, 'Global user settings', '', 'settings-file')
+        );
       }
 
       // 3. 远程设置
       const remoteSettingsPath = this.getRemoteSettingsPath();
       if (remoteSettingsPath && fs.existsSync(remoteSettingsPath)) {
-        this.settingsNodes.push(new VSCodeSettingsNode(
-          'Remote Settings',
-          remoteSettingsPath,
-          false,
-          'Remote development settings'
-        ));
+        this.settingsNodes.push(
+          new VSCodeSettingsNode('Remote Settings', remoteSettingsPath, false, 'Remote development settings', '', 'settings-file')
+        );
       }
 
-      // 3.1. 本地Windows用户设置 (仅在远程会话中显示提示)
+      // 3.1. 本地 Windows 用户设置（仅在远程会话中显示不可访问提示）
       if (vscode.env.remoteName) {
-        const localWindowsSettingsNode = new VSCodeSettingsNode(
-          'Local Windows User Settings (Not Accessible)',
-          '', // 空路径，因为无法直接访问
-          false,
-          'Cannot access local Windows user settings directly from a remote SSH session.'
+        this.settingsNodes.push(
+          new VSCodeSettingsNode(
+            'Local Windows User Settings (Not Accessible)',
+            '',
+            false,
+            'Cannot access local Windows user settings directly from a remote SSH session.',
+            '',
+            'inaccessible-settings'
+          )
         );
-        localWindowsSettingsNode.iconPath = new vscode.ThemeIcon('warning'); // 使用警告图标
-        localWindowsSettingsNode.contextValue = 'inaccessible-settings'; // 特殊上下文值
-        // 移除默认的打开文件命令，因为它无法打开
-        localWindowsSettingsNode.command = undefined;
-        this.settingsNodes.push(localWindowsSettingsNode);
       }
 
-      // 4. 工作区设置
-      const workspaceSettings = this.getWorkspaceSettings();
-      if (workspaceSettings.length > 0) {
-        const workspaceNode = new VSCodeSettingsNode(
-          'Workspace Settings',
-          '',
-          true,
-          'Workspace-level settings'
-        );
-        this.settingsNodes.push(workspaceNode);
+      // 4. 工作区设置（目录节点，仅当存在时）
+      if (this.getWorkspaceSettings().length > 0) {
+        this.settingsNodes.push(new VSCodeSettingsNode('Workspace Settings', '', true, 'Workspace-level settings'));
       }
 
-      // 5. 文件夹设置
-      const folderSettings = this.getFolderSettings();
-      if (folderSettings.length > 0) {
-        const folderNode = new VSCodeSettingsNode(
-          'Folder Settings',
-          '',
-          true,
-          'Folder-level settings'
-        );
-        this.settingsNodes.push(folderNode);
+      // 5. 文件夹设置（目录节点，仅当存在时）
+      if (this.getFolderSettings().length > 0) {
+        this.settingsNodes.push(new VSCodeSettingsNode('Folder Settings', '', true, 'Folder-level settings'));
       }
-
     } catch (error) {
       console.error('Error scanning VSCode settings files:', error);
     }
@@ -186,27 +117,22 @@ export class VSCodeSettingsProvider implements vscode.TreeDataProvider<VSCodeSet
    */
   private getUserSettingsPath(): string | null {
     const platform = os.platform();
-    
     if (platform === 'win32') {
-      // Windows: %APPDATA%/Code/User/settings.json
       const appData = process.env.APPDATA;
       if (appData) {
         return path.join(appData, 'Code', 'User', 'settings.json');
       }
     } else if (platform === 'darwin') {
-      // macOS: ~/Library/Application Support/Code/User/settings.json
       const home = os.homedir();
       if (home) {
         return path.join(home, 'Library', 'Application Support', 'Code', 'User', 'settings.json');
       }
     } else {
-      // Linux: ~/.config/Code/User/settings.json
       const home = os.homedir();
       if (home) {
         return path.join(home, '.config', 'Code', 'User', 'settings.json');
       }
     }
-    
     return null;
   }
 
@@ -230,18 +156,19 @@ export class VSCodeSettingsProvider implements vscode.TreeDataProvider<VSCodeSet
    */
   private getWorkspaceSettings(): VSCodeSettingsNode[] {
     const nodes: VSCodeSettingsNode[] = [];
-    
     if (vscode.workspace.workspaceFile) {
-      // 当前有工作区文件
       const workspaceFilePath = vscode.workspace.workspaceFile.fsPath;
-      nodes.push(new VSCodeSettingsNode(
-        path.basename(workspaceFilePath),
-        workspaceFilePath,
-        false,
-        'Workspace configuration file'
-      ));
+      nodes.push(
+        new VSCodeSettingsNode(
+          path.basename(workspaceFilePath),
+          workspaceFilePath,
+          false,
+          'Workspace configuration file',
+          '',
+          'settings-file'
+        )
+      );
     }
-    
     return nodes;
   }
 
@@ -252,160 +179,148 @@ export class VSCodeSettingsProvider implements vscode.TreeDataProvider<VSCodeSet
    */
   private getFolderSettings(): VSCodeSettingsNode[] {
     const nodes: VSCodeSettingsNode[] = [];
-    
     if (vscode.workspace.workspaceFolders) {
       for (const folder of vscode.workspace.workspaceFolders) {
-        // 检查文件夹下是否存在.vscode/settings.json文件
         const settingsPath = path.join(folder.uri.fsPath, '.vscode', 'settings.json');
         if (fs.existsSync(settingsPath)) {
-          // 只有在存在配置文件时才创建文件夹节点
-          const folderNode = new VSCodeSettingsNode(
-            folder.name,
-            folder.uri.fsPath,
-            true,
-            `Workspace folder: ${folder.name}`,
-            folder.uri.fsPath
+          nodes.push(
+            new VSCodeSettingsNode(folder.name, folder.uri.fsPath, true, `Workspace folder: ${folder.name}`, folder.uri.fsPath)
           );
-          nodes.push(folderNode);
         }
       }
     }
-    
     return nodes;
   }
 
   /**
-   * @brief 获取文件夹下的子目录和设置文件
+   * @brief 获取文件夹下的子目录（含 .vscode/settings.json 者）
    * @private
    * @param folderPath 文件夹路径
-   * @returns {VSCodeSettingsNode[]} 子目录和设置文件节点数组
+   * @returns {VSCodeSettingsNode[]} 子目录节点数组
    */
   private getFolderSettingsFiles(folderPath: string): VSCodeSettingsNode[] {
     const nodes: VSCodeSettingsNode[] = [];
-    
     try {
       const items = fs.readdirSync(folderPath);
-      
       for (const item of items) {
         const itemPath = path.join(folderPath, item);
         const stat = fs.statSync(itemPath);
-        
         if (stat.isDirectory()) {
-          // 如果是目录，检查是否有.vscode/settings.json
           const settingsPath = path.join(itemPath, '.vscode', 'settings.json');
           if (fs.existsSync(settingsPath)) {
-            // 创建目录节点
-            const dirNode = new VSCodeSettingsNode(
-              item,
-              itemPath,
-              true,
-              `Directory: ${item}`,
-              itemPath
-            );
-            nodes.push(dirNode);
+            nodes.push(new VSCodeSettingsNode(item, itemPath, true, `Directory: ${item}`, itemPath));
           }
         }
       }
     } catch (error) {
       console.error(`Error reading directory ${folderPath}:`, error);
     }
-    
     return nodes;
   }
 
   /**
-   * @brief 获取指定目录下的settings.json文件
+   * @brief 获取指定目录下的 settings.json 文件节点
    * @private
    * @param dirPath 目录路径
    * @returns {VSCodeSettingsNode[]} 设置文件节点数组
    */
   private getSettingsFileForDirectory(dirPath: string): VSCodeSettingsNode[] {
     const nodes: VSCodeSettingsNode[] = [];
-    
     const settingsPath = path.join(dirPath, '.vscode', 'settings.json');
     if (fs.existsSync(settingsPath)) {
-      nodes.push(new VSCodeSettingsNode(
-        'settings.json',
-        settingsPath,
-        false,
-        'VSCode settings file'
-      ));
+      nodes.push(new VSCodeSettingsNode('settings.json', settingsPath, false, 'VSCode settings file', '', 'settings-file'));
     }
-    
     return nodes;
   }
 
   /**
-   * @brief 获取树节点的显示项
-   * @param element 树节点元素
-   * @return 返回节点本身作为TreeItem
-   * @description 返回传入的元素作为TreeItem显示。
+   * @brief 同步获取某节点的子节点（原 getChildren 的分支逻辑，去掉 Promise 包装）
+   * @private
+   * @param {VSCodeSettingsNode} [element] 父节点；undefined 表示根级
+   * @returns {VSCodeSettingsNode[]} 子节点数组
    */
-  getTreeItem(element: VSCodeSettingsNode): vscode.TreeItem {
-    return element;
+  private childrenOf(element?: VSCodeSettingsNode): VSCodeSettingsNode[] {
+    if (!element) {
+      this.ensureScanned();
+      return this.settingsNodes;
+    }
+    if (element.label === 'Workspace Settings') {
+      return this.getWorkspaceSettings();
+    }
+    if (element.label === 'Folder Settings') {
+      return this.getFolderSettings();
+    }
+    if (element.isDirectory && element.parentPath) {
+      if (element.label.startsWith('Workspace folder:')) {
+        return this.getFolderSettingsFiles(element.filePath);
+      }
+      return this.getSettingsFileForDirectory(element.filePath);
+    }
+    return [];
   }
 
   /**
-   * @brief 获取子节点
-   * @param element 父节点，如果为undefined则获取根节点
-   * @return Promise<VSCodeSettingsNode[]> 返回子节点数组
-   * @description 返回存储在this.settingsNodes中的数据。如果element为undefined，则返回根节点数据；
-   * 如果element存在，则返回相应的子节点。
+   * @brief 返回完整树快照（SnapshottableProvider 契约）
+   * @returns SnapNode[] 完整设置文件树，可直接 postMessage 给 webview
    */
-  getChildren(element?: VSCodeSettingsNode): Thenable<VSCodeSettingsNode[]> {
-    if (!element) {
-      // 如果还没有扫描过设置文件，进行扫描
-      if (this.settingsNodes.length === 0) {
-        this.scanSettingsFiles();
-      }
-      return Promise.resolve(this.settingsNodes);
-    }
+  getSnapshot(): SnapNode[] {
+    return this.childrenOf().map((n) => this.toSnap(n, ''));
+  }
 
-    // 处理子节点
-    if (element.label === 'Workspace Settings') {
-      return Promise.resolve(this.getWorkspaceSettings());
-    } else if (element.label === 'Folder Settings') {
-      return Promise.resolve(this.getFolderSettings());
-    } else if (element.isDirectory && element.parentPath) {
-      // 如果是文件夹节点，获取该文件夹下的设置文件
-      if (element.label.startsWith('Workspace folder:')) {
-        // 这是工作区文件夹，显示其下的子目录
-        return Promise.resolve(this.getFolderSettingsFiles(element.filePath));
-      } else {
-        // 这是子目录，显示其下的settings.json文件
-        return Promise.resolve(this.getSettingsFileForDirectory(element.filePath));
-      }
+  /**
+   * @brief 把 VSCodeSettingsNode 递归转 SnapNode
+   * @private
+   * @param node 当前节点
+   * @param parentId 父节点 id 前缀（保证 id 唯一/稳定）
+   */
+  private toSnap(node: VSCodeSettingsNode, parentId: string): SnapNode {
+    const id = `${parentId}/${node.filePath || node.label}`;
+    const childNodes = this.childrenOf(node);
+    const hasChildren = childNodes.length > 0;
+    const snap: SnapNode = {
+      id,
+      label: node.label,
+      icon: node.isDirectory ? 'folder' : 'file',
+      collapsibleState: node.isDirectory && hasChildren ? 'collapsed' : 'none',
+      children: hasChildren ? childNodes.map((c) => this.toSnap(c, id)) : undefined
+    };
+    if (node.description) {
+      snap.description = node.description;
     }
+    snap.command = this.commandFor(node);
+    return snap;
+  }
 
-    // 其他节点没有子节点
-    return Promise.resolve([]);
+  /**
+   * @brief 由节点 contextValue/filePath 决定点击命令
+   * @private
+   */
+  private commandFor(node: VSCodeSettingsNode): { command: string; args?: unknown[] } | undefined {
+    if (node.contextValue === 'default-settings') {
+      // 默认设置：执行 VSCode 命令打开原始默认设置
+      return { command: 'workbench.action.openRawDefaultSettings' };
+    }
+    if (node.contextValue === 'inaccessible-settings') {
+      // 远程会话下不可访问，不绑定动作
+      return undefined;
+    }
+    if (!node.isDirectory && node.filePath) {
+      // 普通设置文件：用扩展命令打开
+      return { command: 'vssm-tool-vscode-settings.openFile', args: [node.filePath] };
+    }
+    return undefined;
   }
 
   /**
    * @brief 打开指定设置文件
-   * @param element 要打开的设置节点元素
-   * @description 在编辑器中打开指定的设置文件
+   * @param filePath 要打开的文件绝对路径
    */
-  async openFile(element: VSCodeSettingsNode): Promise<void> {
-    if (!element || element.isDirectory) {
+  async openFile(filePath: string): Promise<void> {
+    if (!filePath) {
       return;
     }
-
-    // 特殊处理默认设置节点
-    if (element.contextValue === 'default-settings') {
-      // 执行VSCode命令打开默认设置
-      await vscode.commands.executeCommand('workbench.action.openRawDefaultSettings');
-      return;
-    }
-
-    // 检查文件路径是否存在
-    if (!element.filePath) {
-      return;
-    }
-
     try {
-      // 使用vscode打开文件
-      const document = await vscode.workspace.openTextDocument(element.filePath);
+      const document = await vscode.workspace.openTextDocument(filePath);
       await vscode.window.showTextDocument(document);
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to open settings file: ${error}`);
@@ -414,27 +329,20 @@ export class VSCodeSettingsProvider implements vscode.TreeDataProvider<VSCodeSet
 }
 
 /**
- * @brief 注册VSCode设置视图
- * @param context 扩展上下文
- * @return 返回视图ID
- * @description 初始化并注册VSCode设置树视图。创建VSCodeSettingsProvider实例，
- * 注册树数据提供者，并返回视图ID。
+ * @brief 注册 VSCode 设置视图到 webview 快照注册表
+ * @param {unknown} _context - 扩展上下文（迁移后未使用，保留签名以契合 extension.ts 注册循环）
+ * @returns {string} viewId（供 extension.ts 去重注册使用）
+ * @details 注意：不再注册原生 TreeView（其内容已搬进 webview）。
+ *          仅创建实例 + 注册打开文件命令 + 挂进 registry。
  */
-export function registerVSCodeSettingsView(context: vscode.ExtensionContext): string {
-  // 创建VSCode设置提供者实例
+export function registerVSCodeSettingsView(_context: unknown): string {
   const settingsProvider = new VSCodeSettingsProvider();
 
-  // 注册树数据提供者
-  vscode.window.registerTreeDataProvider('vssm-tool-vscode-settings', settingsProvider);
-
-  // 注册刷新命令
-  vscode.commands.registerCommand('vssm-tool-vscode-settings.refreshEntry', () => settingsProvider.refresh());
-
-  // 注册打开文件命令
-  vscode.commands.registerCommand('vssm-tool-vscode-settings.openFile', (node: VSCodeSettingsNode) =>
-    settingsProvider.openFile(node)
+  // 注册打开文件命令（参数改为 filePath 字符串，由 webview nodeCommand 触发）
+  vscode.commands.registerCommand('vssm-tool-vscode-settings.openFile', (filePath: string) =>
+    settingsProvider.openFile(filePath)
   );
 
-  // 返回视图ID
-  return 'vssm-tool-vscode-settings';
+  registerSnapshottableProvider(settingsProvider);
+  return settingsProvider.viewId;
 }

@@ -1,153 +1,97 @@
+/**
+ * @file 默认模板视图模块，展示扫描到的 DefaultTemplate.* 文件
+ * @module views/defaultTemplateView
+ * @details 原本是一个原生 TreeView（vssm-tool-default-template），其内容现已搬进 chat webview 渲染，
+ *          故改为实现 SnapshottableProvider：供 webview 取快照，点击节点在编辑器打开该模板文件。
+ */
+
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import {logToVssmToolChannel } from '../helpers/utils'
-/**
- * @class TemplateNode
- * @brief 模板文件树节点类
- * @description 表示模板文件树中的节点，继承自vscode.TreeItem。
- * 用于显示扫描到的DefaultTemplate开头的模板文件。
- */
-export class TemplateNode extends vscode.TreeItem {
-  /**
-   * @brief 构造函数
-   * @param label 节点显示的标签（文件名）
-   * @param filePath 文件的完整路径
-   * @description 创建模板文件节点实例，设置节点的基本属性和命令。
-   */
-  constructor(
-    public readonly label: string,
-    public readonly filePath: string
-  ) {
-    super(label, vscode.TreeItemCollapsibleState.None);
+import { logToVssmToolChannel } from '../helpers/utils';
+import { registerSnapshottableProvider, type SnapNode, type SnapshottableProvider } from './registry';
 
-    // 使用VS Code内置的文本文件图标
-    this.iconPath = new vscode.ThemeIcon('files');
-
-    // 设置悬停提示
-    this.tooltip = `Open ${this.label}`;
-
-    // 设置命令，点击时打开文件
-    this.command = {
-      command: 'vssm-tool-default-template.openTemplate',
-      title: 'Open Template',
-      arguments: [this]
-    };
-  }
+/** @brief 单个模板文件条目（纯数据） */
+interface TemplateEntry {
+  file: string;
+  filePath: string;
 }
 
 /**
  * @class DefaultTemplateProvider
- * @brief 默认模板提供者类
- * @description 实现VS Code的TreeDataProvider接口，提供扫描到的DefaultTemplate文件。
- * 扫描src目录下以DefaultTemplate开头的文件并显示在树视图中。
+ * @brief 默认模板提供者，实现 SnapshottableProvider 供 chat webview 消费
+ * @details 扫描运行目录下以 DefaultTemplate 开头的文件（postbuild 会把它们拷进 out/），
+ *          快照为单层 SnapNode[]，点击节点打开对应文件。
  */
-export class DefaultTemplateProvider implements vscode.TreeDataProvider<TemplateNode> {
-  // 存储模板文件节点
-  private templates: TemplateNode[] = [];
+export class DefaultTemplateProvider implements SnapshottableProvider {
+  /** @brief 对应原 view 的 id（webview 导航/快照路由用） */
+  public readonly viewId = 'vssm-tool-default-template';
 
-  /**
-   * @brief 事件发射器，用于通知树视图数据已更改
-   * @description 当需要刷新树视图时，调用fire()方法触发此事件。
-   */
-  private _onDidChangeTreeData: vscode.EventEmitter<TemplateNode | undefined | void> = new vscode.EventEmitter<
-    TemplateNode | undefined | void
-  >();
+  /** @brief 扫描到的模板文件列表（纯数据） */
+  private templates: TemplateEntry[] = [];
 
-  /**
-   * @brief 树视图数据更改事件
-   * @description VS Code通过此事件监听数据变化并更新UI。
-   */
-  readonly onDidChangeTreeData: vscode.Event<TemplateNode | undefined | void> = this._onDidChangeTreeData.event;
-
-  /**
-   * @brief 刷新树视图
-   * @description 重新扫描模板文件并刷新视图
-   */
-  refresh(): void {
-    this.scanTemplates();
-    this._onDidChangeTreeData.fire();
-    // console.log('Default template view refreshed!');
-    logToVssmToolChannel('Default template view refreshed!');
+  /** @brief 确保已扫描过模板文件 */
+  private ensureScanned(): void {
+    if (this.templates.length === 0) {
+      this.scanTemplates();
+    }
   }
 
   /**
    * @brief 扫描模板文件
-   * @description 扫描src目录下以DefaultTemplate开头的文件
+   * @private
+   * @details __filename 运行时位于 out/tree-views/，'..' '..' 回到 out/；
+   *          postbuild 已把 DefaultTemplate.* 拷贝到 out/，故在此扫描。
    */
   private scanTemplates(): void {
-    // 清空现有模板列表
     this.templates = [];
-
     try {
-      // 获取src目录路径
-      // __filename 是当前文件的完整路径 (src/tree-views/default-template-view.ts)
-      // path.join(__filename, '..', '..') 会返回 src 目录的路径
-      // 具体解析过程：
-      // 1. __filename = d:/sumu_blog/vssm-tool/src/tree-views/default-template-view.ts
-      // 2. __filename + '..' = d:/sumu_blog/vssm-tool/src/tree-views/
-      // 3. __filename + '..' + '..' = d:/sumu_blog/vssm-tool/src/
       const srcDir = path.join(__filename, '..', '..');
-
-      // 读取src目录中的文件
       const files = fs.readdirSync(srcDir);
-
-      // 过滤出以DefaultTemplate开头的文件
       const templateFiles = files.filter(
         (file) => file.startsWith('DefaultTemplate') && fs.statSync(path.join(srcDir, file)).isFile()
       );
-
-      // 为每个模板文件创建节点
-      this.templates = templateFiles.map((file) => new TemplateNode(file, path.join(srcDir, file)));
+      this.templates = templateFiles.map((file) => ({ file, filePath: path.join(srcDir, file) }));
     } catch (error) {
       console.error('Error scanning template files:', error);
     }
   }
 
   /**
-   * @brief 获取树节点的显示项
-   * @param element 树节点元素
-   * @return 返回节点本身作为TreeItem
-   * @description 返回传入的元素作为TreeItem显示。
+   * @brief 返回完整树快照（SnapshottableProvider 契约）
+   * @returns SnapNode[] 单层模板文件列表，可直接 postMessage 给 webview
    */
-  getTreeItem(element: TemplateNode): vscode.TreeItem {
-    return element;
+  getSnapshot(): SnapNode[] {
+    this.ensureScanned();
+    return this.templates.map(
+      (t): SnapNode => ({
+        id: t.filePath,
+        label: t.file,
+        icon: 'file',
+        collapsibleState: 'none',
+        // 点击节点打开该模板文件
+        command: { command: 'vssm-tool-default-template.openTemplate', args: [t.filePath] }
+      })
+    );
   }
 
-  /**
-   * @brief 获取子节点
-   * @param element 父节点，如果为undefined则获取根节点
-   * @return Promise<TemplateNode[]> 返回子节点数组
-   * @description 返回存储在this.templates中的数据。如果element为undefined，则返回根节点数据；
-   * 如果element存在，则返回空数组（因为模板节点没有子节点）。
-   */
-  getChildren(element?: TemplateNode): Thenable<TemplateNode[]> {
-    // 如果没有父节点，返回模板文件数据
-    if (!element) {
-      // 如果还没有扫描过模板文件，进行扫描
-      if (this.templates.length === 0) {
-        this.scanTemplates();
-      }
-      return Promise.resolve(this.templates);
-    }
-
-    // 模板节点没有子节点
-    return Promise.resolve([]);
+  /** @brief webview 请求刷新：重新扫描（日志保留以便排查） */
+  refresh(): void {
+    this.templates = [];
+    this.scanTemplates();
+    logToVssmToolChannel('Default template view refreshed!');
   }
 
   /**
    * @brief 打开指定模板文件
-   * @param element 要打开的模板节点元素
-   * @description 在编辑器中打开指定的模板文件
+   * @param filePath 要打开的文件绝对路径
    */
-  async openTemplate(element: TemplateNode): Promise<void> {
-    if (!element) {
+  async openTemplate(filePath: string): Promise<void> {
+    if (!filePath) {
       return;
     }
-
     try {
-      // 使用vscode打开文件
-      const document = await vscode.workspace.openTextDocument(element.filePath);
+      const document = await vscode.workspace.openTextDocument(filePath);
       await vscode.window.showTextDocument(document);
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to open template file: ${error}`);
@@ -156,27 +100,20 @@ export class DefaultTemplateProvider implements vscode.TreeDataProvider<Template
 }
 
 /**
- * @brief 注册默认模板视图
- * @param context 扩展上下文
- * @return 返回视图ID
- * @description 初始化并注册默认模板树视图。创建DefaultTemplateProvider实例，
- * 注册树数据提供者，并返回视图ID。
+ * @brief 注册默认模板视图到 webview 快照注册表
+ * @param {unknown} _context - 扩展上下文（迁移后未使用，保留签名以契合 extension.ts 注册循环）
+ * @returns {string} viewId（供 extension.ts 去重注册使用）
+ * @details 注意：不再注册原生 TreeView（其内容已搬进 webview）。
+ *          仅创建实例 + 注册打开文件命令 + 挂进 registry。
  */
-export function registerDefaultTemplateView(context: vscode.ExtensionContext): string {
-  // 创建默认模板提供者实例
+export function registerDefaultTemplateView(_context: unknown): string {
   const templateProvider = new DefaultTemplateProvider();
 
-  // 注册树数据提供者
-  vscode.window.registerTreeDataProvider('vssm-tool-default-template', templateProvider);
-
-  // 注册刷新命令
-  vscode.commands.registerCommand('vssm-tool-default-template.refreshEntry', () => templateProvider.refresh());
-
-  // 注册打开模板文件命令
-  vscode.commands.registerCommand('vssm-tool-default-template.openTemplate', (node: TemplateNode) =>
-    templateProvider.openTemplate(node)
+  // 注册打开模板文件命令（参数改为 filePath 字符串，由 webview nodeCommand 触发）
+  vscode.commands.registerCommand('vssm-tool-default-template.openTemplate', (filePath: string) =>
+    templateProvider.openTemplate(filePath)
   );
 
-  // 返回视图ID
-  return 'vssm-tool-default-template';
+  registerSnapshottableProvider(templateProvider);
+  return templateProvider.viewId;
 }

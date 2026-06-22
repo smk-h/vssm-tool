@@ -109,10 +109,24 @@ function TreeNode({ node, depth, expanded, toggle, editable, post }: TreeNodePro
 
   const hasChildren = !!(node.children && node.children.length > 0);
   const isOpen = expanded.has(node.id);
+  /** @brief 可点击：有子节点（展开/折叠）或带 command（触发动作） */
+  const clickable = !editing && (hasChildren || !!node.command);
 
   const startEdit = () => {
     setEditValue(node.label);
     setEditing(true);
+  };
+
+  /** @brief 单击 label：有子节点则展开/折叠，否则触发节点 command */
+  const onLabelClick = () => {
+    if (editing) {
+      return;
+    }
+    if (hasChildren) {
+      toggle(node.id);
+    } else if (node.command) {
+      vscode.postMessage({ type: 'nodeCommand', command: node.command.command, args: node.command.args });
+    }
   };
 
   return (
@@ -142,8 +156,13 @@ function TreeNode({ node, depth, expanded, toggle, editable, post }: TreeNodePro
             onBlur={() => setEditing(false)}
           />
         ) : (
-          <span className="tree-label" onDoubleClick={editable ? startEdit : undefined}>
+          <span
+            className={`tree-label${clickable ? ' act' : ''}`}
+            onClick={clickable ? onLabelClick : undefined}
+            onDoubleClick={editable ? startEdit : undefined}
+            role={clickable ? 'button' : undefined}>
             {node.label}
+            {node.description && <span className="tree-desc">{node.description}</span>}
           </span>
         )}
 
