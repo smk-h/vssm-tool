@@ -10,7 +10,8 @@ import type { ViewAction } from './types';
 /**
  * @brief 页面 -> 扩展 的消息形状（需与扩展侧 _handleMessage 对齐）
  * @details chat 相关：ready / sendMessage；导航与树：requestViewList / requestSnapshot / viewAction；
- *          节点点击：nodeCommand（只读 provider 的打开文件 / 执行命令等动作）
+ *          节点点击：nodeCommand（只读 provider 的打开文件 / 执行命令等动作）；
+ *          刷新：refreshView（让 provider 清缓存后回推新快照）
  */
 export type WebviewMessage =
   | { type: 'ready' }
@@ -18,7 +19,8 @@ export type WebviewMessage =
   | { type: 'requestViewList' }
   | { type: 'requestSnapshot'; viewId: string }
   | { type: 'viewAction'; viewId: string; action: ViewAction }
-  | { type: 'nodeCommand'; command: string; args?: unknown[] };
+  | { type: 'nodeCommand'; command: string; args?: unknown[] }
+  | { type: 'refreshView'; viewId: string };
 
 class VSCodeAPIWrapper {
   /** @brief 缓存的 VS Code webview API（无则处于浏览器 dev 环境） */

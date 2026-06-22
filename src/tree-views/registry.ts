@@ -48,6 +48,13 @@ export interface SnapshottableProvider {
   getSnapshot(): SnapNode[];
   /** @brief 应用 webview 发来的节点操作（支持 CRUD 的 provider 实现） */
   applyAction?(action: ViewAction): void;
+  /**
+   * @brief 刷新数据源（清缓存/重扫），供 webview 刷新按钮调用
+   * @details 有外部数据源且在构造时缓存的 provider（cmd/config/template/settings）实现；
+   *          每次快照都重新计算的 provider（如依赖树）可不实现——webview 重新拉快照即刷新。
+   *          chat provider 用可选链 `provider.refresh?.()` 调用，缺省时退化为直接重新快照。
+   */
+  refresh?(): void;
 }
 
 /**

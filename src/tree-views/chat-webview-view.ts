@@ -5,7 +5,7 @@
  * @details 1) 实现 WebviewViewProvider，resolveWebviewView 中注入 HTML 壳
  *          2. 开启 enableScripts，建立 localResourceRoots 白名单
  *          3. 通过 webview.postMessage / onDidReceiveMessage 做扩展 ⇄ 页面 双向通信
- *          消息协议（页面→扩展）：ready / sendMessage / requestViewList / requestSnapshot / viewAction / nodeCommand
+ *          消息协议（页面→扩展）：ready / sendMessage / requestViewList / requestSnapshot / viewAction / nodeCommand / refreshView
  *          消息协议（扩展→页面）：reply / info / viewList / snapshot
  */
 
@@ -141,6 +141,17 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
         const viewId = String(data?.viewId ?? '');
         const provider = treeViewRegistry.get(viewId);
         if (provider) {
+          this.postMessageToWebview({ type: 'snapshot', viewId, tree: provider.getSnapshot() });
+        }
+        break;
+      }
+      // 页面请求刷新某视图：先让 provider 清缓存/重扫，再回推最新快照
+      case 'refreshView': {
+        const viewId = String(data?.viewId ?? '');
+        const provider = treeViewRegistry.get(viewId);
+        if (provider) {
+          // 有 refresh() 则刷新数据源；无则 getSnapshot 本身即为最新（如依赖树）
+          provider.refresh?.();
           this.postMessageToWebview({ type: 'snapshot', viewId, tree: provider.getSnapshot() });
         }
         break;

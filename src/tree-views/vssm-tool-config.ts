@@ -58,6 +58,8 @@ export class ConfigViewProvider implements SnapshottableProvider {
 
       // 检查是否有 contributes.configuration.properties 配置
       if (packageJson.contributes?.configuration?.properties) {
+        // 清空旧分组，避免重复刷新时累加
+        this.configGroups.clear();
         const properties = packageJson.contributes.configuration.properties;
         // 遍历所有配置属性，按前缀分组
         Object.entries(properties).forEach(([key, value]) => {
@@ -79,6 +81,14 @@ export class ConfigViewProvider implements SnapshottableProvider {
       // 捕获并记录加载错误
       console.error('Failed to load config from package.json:', error);
     }
+  }
+
+  /**
+   * @brief 刷新：重新读取 package.json 配置（loadConfig 内部已 clear，可安全重复调用）
+   * @details 供 webview 刷新按钮调用。
+   */
+  refresh(): void {
+    this.loadConfigFromPackageJson();
   }
 
   /**

@@ -44,6 +44,13 @@ export default function App() {
     }
   };
 
+  /** @brief 刷新当前视图：让扩展侧 provider 清缓存后回推新快照 */
+  const refreshCurrent = () => {
+    if (mode !== 'chat') {
+      vscode.postMessage({ type: 'refreshView', viewId: mode });
+    }
+  };
+
   const currentLabel = views.find((v) => v.id === mode)?.label ?? 'Chat';
   const currentEditable = views.find((v) => v.id === mode)?.editable ?? false;
 
@@ -51,7 +58,12 @@ export default function App() {
     <div className={`app${railOpen ? ' rail-open' : ''}`}>
       <NavRail views={views} mode={mode} onSelect={selectView} />
       <main className="main">
-        <TopBar title={currentLabel} railOpen={railOpen} onToggleRail={() => setRailOpen((o) => !o)} />
+        <TopBar
+          title={currentLabel}
+          railOpen={railOpen}
+          onToggleRail={() => setRailOpen((o) => !o)}
+          onRefresh={mode !== 'chat' ? refreshCurrent : undefined}
+        />
         <div className="content">
           {mode === 'chat' ? (
             <ChatView />

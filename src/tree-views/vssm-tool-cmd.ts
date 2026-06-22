@@ -73,6 +73,14 @@ export class CommandsViewProvider implements SnapshottableProvider {
   }
 
   /**
+   * @brief 刷新：重新读取 package.json 命令声明（loadCommands 全量替换 this.commands）
+   * @details 供 webview 刷新按钮调用。
+   */
+  refresh(): void {
+    this.loadCommandsFromPackageJson();
+  }
+
+  /**
    * @brief 返回完整树快照（SnapshottableProvider 契约）
    * @returns SnapNode[] 单层命令节点列表，可直接 postMessage 给 webview
    */
