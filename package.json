@@ -20,6 +20,9 @@
     "Other"
   ],
   "main": "./out/extension.js",
+  "workspaces": [
+    "webview-ui"
+  ],
   "contributes": {
     "commands": [
       {
@@ -430,7 +433,8 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile && npm run postbuild",
+    "vscode:prepublish": "npm run build:webview && npm run compile && npm run postbuild",
+    "build:webview": "npm run build -w webview-ui",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "postbuild": "shx mkdir -p out && shx cp -f src/DefaultTemplate.* out/ && shx cp -rf src/template out/template",

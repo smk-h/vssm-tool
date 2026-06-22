@@ -15,3 +15,9 @@ out/test/**
 vssm-tool.code-workspace
 .prettierignore
 .editorconfig
+
+# webview-ui 子工程：只发布构建产物 dist/，排除源码与依赖
+webview-ui/src/**
+webview-ui/node_modules/**
+webview-ui/index.html
+webview-ui/vite.config.ts

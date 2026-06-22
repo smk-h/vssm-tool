@@ -1,18 +1,19 @@
 /**
- * @file Webview View 最小示例：一个挂在侧边栏的聊天面板
+ * @file Webview View 聊天面板：UI 由 webview-ui 子工程（React+Vite）构建，
+ *       扩展侧只负责装配一个加载构建产物的薄 HTML 壳（参考 Roo Code 的 getHtmlContent）。
  * @module views/chatWebviewView
- * @details 演示 VS Code WebviewView 的核心用法：
- *          1. 实现 WebviewViewProvider，在 resolveWebviewView 中注入 HTML
+ * @details 1) 实现 WebviewViewProvider，resolveWebviewView 中注入 HTML 壳
  *          2. 开启 enableScripts，建立 localResourceRoots 白名单
  *          3. 通过 webview.postMessage / onDidReceiveMessage 做扩展 ⇄ 页面 双向通信
- *          页面 HTML 全部内联（无需前端构建），用 VS Code CSS 变量自动适配明暗主题。
+ *          消息协议：ready / sendMessage（页面→扩展），reply / info（扩展→页面）。
  */
 
 import * as vscode from 'vscode';
 import { logToVssmToolChannel } from '../helpers/utils';
+import { getNonce, getUri } from '../helpers/webview';
 
 /**
- * @brief Webview View 最小示例提供者
+ * @brief 聊天 Webview View 提供者
  * @class ChatWebviewViewProvider
  * @implements {vscode.WebviewViewProvider}
  */
@@ -44,7 +45,7 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._extensionUri]
     };
 
-    // 注入页面内容
+    // 注入加载构建产物的 HTML 壳
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
     // 接收来自页面的消息
@@ -91,13 +92,17 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * @brief 生成 webview 的 HTML（内联 CSS + JS）
-   * @param {vscode.Webview} webview - webview 实例，用于拼接 CSP 资源源
+   * @brief 装配加载构建产物的薄 HTML 壳（参考 Roo Code 的 getHtmlContent）
+   * @param {vscode.Webview} webview - webview 实例，用于拼接 CSP 与资源 URI
    * @returns {string} 完整 HTML 文档
-   * @details CSP 中只放行带 nonce 的内联脚本/样式，避免被注入外部资源。
+   * @details CSP：style-src 放行 webview 源（加载 index.css）；script-src 用一次性 nonce +
+   *          'strict-dynamic'（入口 index.js 带 nonce，其 import 的分片被信任）。
+   *          JS/CSS 地址用 asWebviewUri 转换自 webview-ui/dist/assets/。
    */
   private _getHtmlForWebview(webview: vscode.Webview): string {
     const nonce = getNonce();
+    const scriptUri = getUri(webview, this._extensionUri, ['webview-ui', 'dist', 'assets', 'index.js']);
+    const styleUri = getUri(webview, this._extensionUri, ['webview-ui', 'dist', 'assets', 'index.css']);
 
     return /* html */ `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -105,118 +110,17 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'none';
-                 style-src ${webview.cspSource} 'nonce-${nonce}';
-                 script-src 'nonce-${nonce}';" />
+                 style-src ${webview.cspSource};
+                 script-src 'nonce-${nonce}' 'strict-dynamic';" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style nonce="${nonce}">
-    body {
-      padding: 10px;
-      color: var(--vscode-foreground);
-      font-family: var(--vscode-font-family);
-      font-size: var(--vscode-font-size);
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      box-sizing: border-box;
-      margin: 0;
-    }
-    #messages {
-      flex: 1;
-      overflow-y: auto;
-      border: 1px solid var(--vscode-panel-border);
-      padding: 6px;
-      margin-bottom: 8px;
-      border-radius: 4px;
-    }
-    .msg { padding: 4px 0; border-bottom: 1px dashed var(--vscode-editorWidget-border); }
-    .msg:last-child { border-bottom: none; }
-    .bar { display: flex; gap: 6px; }
-    input {
-      flex: 1;
-      background: var(--vscode-input-background);
-      color: var(--vscode-input-foreground);
-      border: 1px solid var(--vscode-input-border);
-      padding: 4px 6px;
-      border-radius: 2px;
-      outline: none;
-    }
-    button {
-      background: var(--vscode-button-background);
-      color: var(--vscode-button-foreground);
-      border: none;
-      padding: 4px 12px;
-      border-radius: 2px;
-      cursor: pointer;
-    }
-    button:hover { background: var(--vscode-button-hoverBackground); }
-  </style>
+  <link rel="stylesheet" href="${styleUri}" />
 </head>
 <body>
-  <div id="messages"></div>
-  <div class="bar">
-    <input id="input" placeholder="输入消息后回车发送..." />
-    <button id="send">发送</button>
-  </div>
-
-  <!-- 注意：script 必须带 nonce，否则会被 CSP 拦截 -->
-  <script nonce="${nonce}">
-    // 1) 拿到 VS Code 注入的通信 API（每个页面只能 acquire 一次）
-    const vscode = acquireVsCodeApi();
-
-    const messagesEl = document.getElementById('messages');
-    const inputEl = document.getElementById('input');
-    const sendBtn = document.getElementById('send');
-
-    function appendMessage(text) {
-      const div = document.createElement('div');
-      div.className = 'msg';
-      div.textContent = text;
-      messagesEl.appendChild(div);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function send() {
-      const value = inputEl.value.trim();
-      if (!value) { return; }
-      appendMessage('you: ' + value);
-      // 2) 页面 -> 扩展：postMessage
-      vscode.postMessage({ type: 'sendMessage', value: value });
-      inputEl.value = '';
-    }
-
-    sendBtn.addEventListener('click', send);
-    inputEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { send(); }
-    });
-
-    // 3) 扩展 -> 页面：监听 message 事件
-    window.addEventListener('message', (event) => {
-      const data = event.data;
-      if (!data) { return; }
-      if (data.type === 'reply' || data.type === 'info') {
-        appendMessage('ext: ' + data.value);
-      }
-    });
-
-    // 4) 通知扩展：页面已就绪
-    vscode.postMessage({ type: 'ready' });
-  </script>
+  <div id="root"></div>
+  <script nonce="${nonce}" type="module" src="${scriptUri}"></script>
 </body>
 </html>`;
   }
-}
-
-/**
- * @brief 生成 CSP nonce（32 位随机字符串）
- * @returns {string} nonce
- */
-function getNonce(): string {
-  let text = '';
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
 }
 
 /**

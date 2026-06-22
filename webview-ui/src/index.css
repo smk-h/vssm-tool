@@ -1,0 +1,80 @@
+/**
+ * @file 聊天面板基础样式，沿用 VS Code CSS 变量自动适配明暗主题
+ * @details 规则从原内联 <style> 搬迁而来，仅把布局容器从 body 改为 .app / #root。
+ */
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  box-sizing: border-box;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--vscode-panel-border);
+  padding: 6px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.msg {
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--vscode-editorWidget-border);
+}
+
+.msg:last-child {
+  border-bottom: none;
+}
+
+.bar {
+  display: flex;
+  gap: 6px;
+}
+
+input {
+  flex: 1;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  padding: 4px 6px;
+  border-radius: 2px;
+  outline: none;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+button {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  padding: 4px 12px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+button:hover {
+  background: var(--vscode-button-hoverBackground);
+}

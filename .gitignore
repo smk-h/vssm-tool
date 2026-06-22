@@ -3,3 +3,15 @@ dist
 node_modules
 .vscode-test/
 *.vsix
+Roo-Code-main
+
+# webview-ui 子工程（node_modules/dist 已被上面的通用规则覆盖，这里显式标注）
+webview-ui/node_modules/
+webview-ui/dist/
+
+# 防止根 tsc watch 误编译 webview-ui 的 .ts/.tsx 生成的 .js/.js.map 产物
+# （源码全为 TS；真产物在 dist/ 下，已被上面忽略。node_modules 同理不受影响）
+webview-ui/src/**/*.js
+webview-ui/src/**/*.js.map
+webview-ui/vite.config.js
+webview-ui/vite.config.js.map
