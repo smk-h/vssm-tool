@@ -418,6 +418,13 @@
           "name": "fixed data provider",
           "icon": "resources/icon/test.svg",
           "contextualTitle": "Tree View Test"
+        },
+        {
+          "id": "vssm-tool-chat",
+          "name": "Chat (Webview)",
+          "type": "webview",
+          "icon": "$(comment)",
+          "contextualTitle": "Chat Webview Demo"
         }
       ]
     }

@@ -25,6 +25,7 @@ import { registerNodeDependenciesView } from './tree-views/vssm-tool-node-depend
 import { registerCommandsView } from './tree-views/vssm-tool-cmd';
 import { registerFixedDataView } from './tree-views/fixed-data-provider';
 import { registerVSCodeSettingsView } from './tree-views/vscode-settings-view';
+import { registerChatWebviewView } from './tree-views/chat-webview-view';
 import { registerSendToClaudeCodeCommand } from './cmd/send-to-claude';
 import { registerInitProjectCommand } from './cmd/initProject';
 
@@ -105,6 +106,10 @@ export function activate(context: vscode.ExtensionContext) {
     },
     vscodeSettingsView: {
       register: registerVSCodeSettingsView,
+      enabled: true
+    },
+    chatWebviewView: {
+      register: registerChatWebviewView,
       enabled: true
     },
     initProject: {
