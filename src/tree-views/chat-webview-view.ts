@@ -5,12 +5,22 @@
  * @details 1) 实现 WebviewViewProvider，resolveWebviewView 中注入 HTML 壳
  *          2. 开启 enableScripts，建立 localResourceRoots 白名单
  *          3. 通过 webview.postMessage / onDidReceiveMessage 做扩展 ⇄ 页面 双向通信
- *          消息协议：ready / sendMessage（页面→扩展），reply / info（扩展→页面）。
+ *          消息协议（页面→扩展）：ready / sendMessage / requestViewList / requestSnapshot / viewAction
+ *          消息协议（扩展→页面）：reply / info / viewList / snapshot
  */
 
 import * as vscode from 'vscode';
 import { logToVssmToolChannel } from '../helpers/utils';
 import { getNonce, getUri } from '../helpers/webview';
+import { treeViewRegistry, type ViewAction } from './registry';
+
+/**
+ * @brief 导航栏展示用的视图标签映射（viewId → 友好名）
+ * @details Chat 作为默认视图常驻首项；后续接入更多 provider 在此补充标签。
+ */
+const VIEW_LABELS: Record<string, string> = {
+  'vssm-tool-fixed-data': 'Fixed Data'
+};
 
 /**
  * @brief 聊天 Webview View 提供者
@@ -84,6 +94,40 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
         // 这里就是将来对接 LLM / 命令执行的扩展点
         this.postMessageToWebview({ type: 'reply', value: reply });
         logToVssmToolChannel('chat webview received: ' + text);
+        break;
+      }
+      // 页面请求导航栏视图列表：Chat 常驻首项 + registry 中所有 provider
+      case 'requestViewList': {
+        const views = [
+          { id: 'chat', label: 'Chat', icon: 'chat', editable: false },
+          ...Array.from(treeViewRegistry.values()).map((p) => ({
+            id: p.viewId,
+            label: VIEW_LABELS[p.viewId] ?? p.viewId,
+            icon: 'tree',
+            editable: typeof p.applyAction === 'function'
+          }))
+        ];
+        this.postMessageToWebview({ type: 'viewList', views });
+        break;
+      }
+      // 页面请求某视图的树快照
+      case 'requestSnapshot': {
+        const viewId = String(data?.viewId ?? '');
+        const provider = treeViewRegistry.get(viewId);
+        if (provider) {
+          this.postMessageToWebview({ type: 'snapshot', viewId, tree: provider.getSnapshot() });
+        }
+        break;
+      }
+      // 页面对某视图发起节点操作（增/改/删）；应用后回推最新快照
+      case 'viewAction': {
+        const viewId = String(data?.viewId ?? '');
+        const provider = treeViewRegistry.get(viewId);
+        const action = data?.action as ViewAction | undefined;
+        if (provider && action && typeof provider.applyAction === 'function') {
+          provider.applyAction(action);
+          this.postMessageToWebview({ type: 'snapshot', viewId, tree: provider.getSnapshot() });
+        }
         break;
       }
       default:

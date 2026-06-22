@@ -1,80 +1,65 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { vscode } from './vscode';
+import type { SnapNode, ViewListEntry } from './types';
+import TopBar from './components/TopBar';
+import NavRail from './components/NavRail';
+import ChatView from './components/ChatView';
+import TreeView from './components/TreeView';
 
 /**
- * @brief 聊天面板：用 React 复刻原内联界面
- * @details 消息列表 + 输入框 + 发送按钮 + echo 回复；
- *          与扩展侧通过 postMessage 双向通信，协议保持 ready/sendMessage/reply/info。
+ * @brief 应用外壳：顶栏 + 可折叠左侧导航 + 主内容区
+ * @details 默认显示聊天；点齿轮露出导航栏，选某个视图则请求其快照并渲染。
+ *          视图模式切换是 React state 重渲染（非 webview 真重载），匹配 Roo Code 行为。
  */
 export default function App() {
-  const [messages, setMessages] = useState<string[]>([]);
-  const [input, setInput] = useState('');
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [railOpen, setRailOpen] = useState(false);
+  /** @brief 当前视图：'chat' 或某个 viewId */
+  const [mode, setMode] = useState<string>('chat');
+  const [views, setViews] = useState<ViewListEntry[]>([{ id: 'chat', label: 'Chat', icon: 'chat', editable: false }]);
+  const [snapshots, setSnapshots] = useState<Record<string, SnapNode[]>>({});
 
-  /** @brief 追加一条消息并触发滚动到底部 */
-  const appendMessage = (text: string) => {
-    setMessages((prev) => [...prev, text]);
-  };
-
-  // 1) 通知扩展：页面已就绪；2) 监听 扩展 -> 页面 的消息（reply/info）
+  // 挂载时拉导航栏列表；监听 viewList / snapshot
   useEffect(() => {
-    vscode.postMessage({ type: 'ready' });
-
-    const handler = (event: MessageEvent) => {
-      const data = event.data;
-      if (!data) {
+    vscode.postMessage({ type: 'requestViewList' });
+    const handler = (e: MessageEvent) => {
+      const d = e.data;
+      if (!d) {
         return;
       }
-      if (data.type === 'reply' || data.type === 'info') {
-        appendMessage('ext: ' + String(data.value));
+      if (d.type === 'viewList') {
+        setViews(d.views as ViewListEntry[]);
+      } else if (d.type === 'snapshot') {
+        setSnapshots((prev) => ({ ...prev, [d.viewId as string]: d.tree as SnapNode[] }));
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  // 新消息时滚动到底
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-  }, [messages]);
-
-  /** @brief 发送：先在本地追加 you:，再 postMessage 给扩展 */
-  const send = () => {
-    const value = input.trim();
-    if (!value) {
-      return;
-    }
-    appendMessage('you: ' + value);
-    vscode.postMessage({ type: 'sendMessage', value });
-    setInput('');
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      send();
+  /** @brief 选某视图：切 mode；非 chat 则请求快照 */
+  const selectView = (id: string) => {
+    setMode(id);
+    if (id !== 'chat') {
+      vscode.postMessage({ type: 'requestSnapshot', viewId: id });
     }
   };
+
+  const currentLabel = views.find((v) => v.id === mode)?.label ?? 'Chat';
+  const currentEditable = views.find((v) => v.id === mode)?.editable ?? false;
 
   return (
-    <div className="app">
-      <div className="messages">
-        {messages.map((m, i) => (
-          <div className="msg" key={i}>
-            {m}
-          </div>
-        ))}
-        <div ref={bottomRef} />
-      </div>
-      <div className="bar">
-        <input
-          autoFocus
-          value={input}
-          placeholder="输入消息后回车发送..."
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKeyDown}
-        />
-        <button onClick={send}>发送</button>
-      </div>
+    <div className={`app${railOpen ? ' rail-open' : ''}`}>
+      <NavRail views={views} mode={mode} onSelect={selectView} />
+      <main className="main">
+        <TopBar title={currentLabel} railOpen={railOpen} onToggleRail={() => setRailOpen((o) => !o)} />
+        <div className="content">
+          {mode === 'chat' ? (
+            <ChatView />
+          ) : (
+            <TreeView viewId={mode} tree={snapshots[mode]} editable={currentEditable} />
+          )}
+        </div>
+      </main>
     </div>
   );
 }

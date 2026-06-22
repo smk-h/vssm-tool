@@ -1,6 +1,6 @@
 /**
- * @file 聊天面板基础样式，沿用 VS Code CSS 变量自动适配明暗主题
- * @details 规则从原内联 <style> 搬迁而来，仅把布局容器从 body 改为 .app / #root。
+ * @file 聊天 webview 样式：顶栏 + 左侧导航 + 主内容区（聊天 / 树）
+ * @details 沿用 VS Code CSS 变量自动适配明暗主题。
  */
 
 html,
@@ -17,14 +17,119 @@ body {
   box-sizing: border-box;
 }
 
-.app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  padding: 10px;
+* {
   box-sizing: border-box;
 }
 
+/* ── 整体布局：左侧导航 + 右侧主区 ──────────────────────────── */
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+/* 左侧导航栏：默认收起，.rail-open 时滑出 */
+.rail {
+  width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border-right: 1px solid transparent;
+  background: var(--vscode-sideBar-background);
+  transition:
+    width 0.18s ease,
+    padding 0.18s ease,
+    border-color 0.18s ease;
+}
+.app.rail-open .rail {
+  width: 44px;
+  padding: 8px 0;
+  border-right-color: var(--vscode-panel-border);
+}
+.rail-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  opacity: 0.8;
+  font-size: 16px;
+}
+.rail-btn:hover {
+  background: var(--vscode-list-hoverBackground);
+  opacity: 1;
+}
+.rail-btn.active {
+  background: var(--vscode-list-activeSelectionBackground);
+  opacity: 1;
+}
+
+/* 主区：顶栏 + 内容 */
+.main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 顶栏 */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.topbar .title {
+  font-weight: 600;
+  opacity: 0.9;
+}
+.icon-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+}
+.icon-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+.icon-btn.active {
+  background: var(--vscode-toolbar-activeBackground);
+}
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 内容区：聊天或树 */
+.content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── 聊天视图 ──────────────────────────────────────────────── */
+.chat-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 10px;
+}
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -33,23 +138,20 @@ body {
   margin-bottom: 8px;
   border-radius: 4px;
 }
-
 .msg {
   padding: 4px 0;
   border-bottom: 1px dashed var(--vscode-editorWidget-border);
 }
-
 .msg:last-child {
   border-bottom: none;
 }
-
 .bar {
   display: flex;
   gap: 6px;
 }
 
+/* ── 通用 input / button ──────────────────────────────────── */
 input {
-  flex: 1;
   background: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-border);
@@ -59,12 +161,10 @@ input {
   font-family: inherit;
   font-size: inherit;
 }
-
 input:focus {
   border-color: var(--vscode-focusBorder);
 }
-
-button {
+.bar button {
   background: var(--vscode-button-background);
   color: var(--vscode-button-foreground);
   border: none;
@@ -74,7 +174,96 @@ button {
   font-family: inherit;
   font-size: inherit;
 }
-
-button:hover {
+.bar button:hover {
   background: var(--vscode-button-hoverBackground);
+}
+
+/* ── 树视图 ────────────────────────────────────────────────── */
+.tree {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 4px;
+}
+.tree-empty {
+  padding: 16px;
+  opacity: 0.6;
+}
+.tree-node {
+  user-select: none;
+}
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 0;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.tree-row:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.tree-toggle {
+  width: 16px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+.tree-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tree-actions {
+  display: none;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.tree-row:hover .tree-actions {
+  display: inline-flex;
+}
+.tree-act {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  opacity: 0.8;
+  font-size: 12px;
+  padding: 0;
+}
+.tree-act:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  opacity: 1;
+}
+.tree-input {
+  flex: 1;
+  min-width: 40px;
+}
+.tree-add-row {
+  padding-left: 0;
+}
+.tree-root-add {
+  margin-top: 8px;
+  padding: 0 6px;
+}
+.tree-root-add-btn {
+  background: transparent;
+  color: var(--vscode-foreground);
+  border: 1px dashed var(--vscode-input-border);
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0.7;
+  font-family: inherit;
+  font-size: inherit;
+}
+.tree-root-add-btn:hover {
+  opacity: 1;
+  border-color: var(--vscode-focusBorder);
 }

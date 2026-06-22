@@ -5,8 +5,18 @@
  *          2) 在浏览器 dev server（vite）里没有 acquireVsCodeApi，走 console 回退，便于调试
  */
 
-/** @brief 页面 -> 扩展 的消息形状（需与扩展侧 _handleMessage 对齐） */
-export type WebviewMessage = { type: 'ready' } | { type: 'sendMessage'; value: string };
+import type { ViewAction } from './types';
+
+/**
+ * @brief 页面 -> 扩展 的消息形状（需与扩展侧 _handleMessage 对齐）
+ * @details chat 相关：ready / sendMessage；导航与树：requestViewList / requestSnapshot / viewAction
+ */
+export type WebviewMessage =
+  | { type: 'ready' }
+  | { type: 'sendMessage'; value: string }
+  | { type: 'requestViewList' }
+  | { type: 'requestSnapshot'; viewId: string }
+  | { type: 'viewAction'; viewId: string; action: ViewAction };
 
 class VSCodeAPIWrapper {
   /** @brief 缓存的 VS Code webview API（无则处于浏览器 dev 环境） */

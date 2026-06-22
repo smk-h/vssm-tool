@@ -23,7 +23,7 @@ import { registerConfigView } from './tree-views/vssm-tool-config';
 import { registerDefaultTemplateView } from './tree-views/default-template-view';
 import { registerNodeDependenciesView } from './tree-views/vssm-tool-node-dependencies';
 import { registerCommandsView } from './tree-views/vssm-tool-cmd';
-import { registerFixedDataView } from './tree-views/fixed-data-provider';
+import { registerFixedDataProvider } from './tree-views/fixed-data-provider';
 import { registerVSCodeSettingsView } from './tree-views/vscode-settings-view';
 import { registerChatWebviewView } from './tree-views/chat-webview-view';
 import { registerSendToClaudeCodeCommand } from './cmd/send-to-claude';
@@ -100,8 +100,8 @@ export function activate(context: vscode.ExtensionContext) {
       register: registerCommandsView,
       enabled: true
     },
-    fixedDataView: {
-      register: registerFixedDataView,
+    fixedData: {
+      register: registerFixedDataProvider,
       enabled: true
     },
     vscodeSettingsView: {
