@@ -2,6 +2,7 @@
 include:
 - .cnb/workflows/cnb-custom-env.yml
 - .cnb/workflows/cnb-build-image.yml
+- .cnb/workflows/cnb-crontab.yml
 
 $:
   vscode:
@@ -14,6 +15,14 @@ $:
         image: cnbcool/default-dev-env:latest
         # build:
         #   dockerfile: Dockerfile
+      env:
+        # 声明首次打开终端时自动执行的命令，支持多行文本
+        CNB_WELCOME_CMD: |
+          clear; echo "++++++++++ Hello sumu ++++++++++"
+      # https://docs.cnb.cool/zh/build/build-node.html
+      # runner:
+      #   cpus: 32
+      #   tags: cnb:arch:amd64:gpu:H20
       imports:
         - https://cnb.cool/sumu.k/secret-key/-/blob/main/llm.yml
       services:
