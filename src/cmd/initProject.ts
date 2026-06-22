@@ -13,6 +13,7 @@ const projectTypes = [
  * @details 将扩展内置模板目录src/template/c-vscode/下的所有文件及目录直接拷贝到工作区根目录。
  *          其中.clang-format不再使用模板目录中的同名文件，而是从扩展内置的DefaultTemplate.clang-format拷贝，
  *          以保证与单独生成.clang-format命令使用同一份C语言模板。
+ *          模板目录中的C.gitignore会重命名为.gitignore拷贝到工作区根目录。
  *          若目标位置已存在同名文件或目录则跳过。
  * @param context VS Code扩展上下文，用于获取扩展路径等信息
  * @param templateLabel 项目类型的显示标签，用于日志和提示信息（如"C (VSCode)"）
@@ -45,6 +46,11 @@ function initCVscodeProject(context: vscode.ExtensionContext, templateLabel: str
         continue;
       }
 
+      // C.gitignore在拷贝时重命名为.gitignore，跳过常规同名拷贝逻辑
+      if (entry === 'C.gitignore') {
+        continue;
+      }
+
       const srcPath = path.join(templateDir, entry);
       const destPath = path.join(targetRoot, entry);
 
@@ -69,6 +75,16 @@ function initCVscodeProject(context: vscode.ExtensionContext, templateLabel: str
       skipped = true;
     } else if (fs.existsSync(clangFormatSrc)) {
       fs.copyFileSync(clangFormatSrc, clangFormatDest);
+      copied = true;
+    }
+
+    // 模板目录中的C.gitignore拷贝为.gitignore（源文件命名避免在扩展仓库中被当作忽略文件）
+    const gitignoreSrc = path.join(templateDir, 'C.gitignore');
+    const gitignoreDest = path.join(targetRoot, '.gitignore');
+    if (fs.existsSync(gitignoreDest)) {
+      skipped = true;
+    } else if (fs.existsSync(gitignoreSrc)) {
+      fs.copyFileSync(gitignoreSrc, gitignoreDest);
       copied = true;
     }
 
