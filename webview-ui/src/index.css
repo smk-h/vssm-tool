@@ -7,7 +7,9 @@ html,
 body,
 #root {
   height: 100%;
+  width: 100%;
   margin: 0;
+  padding: 0;
 }
 
 body {
@@ -24,51 +26,79 @@ body {
 /* ── 整体布局：左侧导航 + 右侧主区 ──────────────────────────── */
 .app {
   display: flex;
+  width: 100%;
   height: 100vh;
 }
 
-/* 左侧导航栏：默认收起，.rail-open 时滑出 */
+/* 左侧导航栏：默认收起，.rail-open 时滑出；观感对齐 VS Code Activity Bar（Roo Code 同款） */
 .rail {
   width: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
+  align-items: stretch;
+  gap: 1px;
   padding: 0;
   border-right: 1px solid transparent;
-  background: var(--vscode-sideBar-background);
+  background: var(--vscode-activityBar-background, var(--vscode-sideBar-background));
   transition:
     width 0.18s ease,
     padding 0.18s ease,
     border-color 0.18s ease;
 }
 .app.rail-open .rail {
-  width: 44px;
-  padding: 8px 0;
-  border-right-color: var(--vscode-panel-border);
+  width: 48px;
+  /* 无内边距：轨道背景与首个/末个按钮均紧贴上下边界，呈整条 Activity Bar 贴边观感 */
+  padding: 0;
+  border-right-color: var(--vscode-activityBar-border, var(--vscode-panel-border));
 }
+/* 单个导航按钮：占满轨道宽度，正方形 Activity Bar 槽位 */
 .rail-btn {
-  width: 30px;
-  height: 30px;
+  position: relative;
+  width: 100%;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 4px;
   background: transparent;
-  color: var(--vscode-foreground);
+  color: var(--vscode-activityBar-inactiveForeground, var(--vscode-foreground));
+  opacity: 0.85;
   cursor: pointer;
-  opacity: 0.8;
-  font-size: 16px;
+  transition:
+    background-color 0.1s ease,
+    color 0.1s ease,
+    opacity 0.1s ease;
 }
 .rail-btn:hover {
   background: var(--vscode-list-hoverBackground);
+  color: var(--vscode-activityBar-foreground, var(--vscode-foreground));
   opacity: 1;
 }
+/* 选中态：左侧 2px 强调条 + 高亮背景 + 全亮前景（VS Code Activity Bar 同款指示器） */
 .rail-btn.active {
-  background: var(--vscode-list-activeSelectionBackground);
+  background: var(--vscode-activityBar-activeBackground, var(--vscode-list-activeSelectionBackground));
+  color: var(--vscode-activityBar-foreground, var(--vscode-foreground));
   opacity: 1;
+}
+.rail-btn.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--vscode-activityBar-activeBorder, var(--vscode-focusBorder));
+}
+.rail-btn:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -3px;
+}
+/* Codicon 内联 SVG：统一尺寸，避免被 flex 拉伸 */
+.rail-btn svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
 }
 
 /* 主区：顶栏 + 内容 */
