@@ -1,5 +1,5 @@
 # 匹配所有分支名
-"**":
+'**':
   web_trigger_build_image:
     - services:
         - docker

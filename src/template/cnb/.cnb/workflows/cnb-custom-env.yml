@@ -1,5 +1,5 @@
 # 匹配所有分支名
-"**":
+'**':
   web_trigger_cnb_custom_env:
     - services:
         - docker
@@ -25,16 +25,16 @@
             [ "$custom_image_url" != "" ]
           image: docker.cnb.cool/sumu.k/cnb-custom-env/cnb-custom-env
           settings:
-            stype: "custom"
-            cpu: "${cpu_cores}"
-            image: "${custom_image_url}"
-            tag: "${cluster_tag}"
+            stype: 'custom'
+            cpu: '${cpu_cores}'
+            image: '${custom_image_url}'
+            tag: '${cluster_tag}'
         - name: start custom environment with selected image
           if: |
             [ "$custom_image_url" == "" ]
           image: docker.cnb.cool/sumu.k/cnb-custom-env/cnb-custom-env
           settings:
-            stype: "custom"
-            cpu: "${cpu_cores}"
-            image: "${image_select}"
-            tag: "${cluster_tag}"
+            stype: 'custom'
+            cpu: '${cpu_cores}'
+            image: '${image_select}'
+            tag: '${cluster_tag}'

@@ -1,6 +1,6 @@
 branch:
   # 正则匹配所有分支,按钮将在所有分支详情页面显示
-  - reg: ".*"
+  - reg: '.*'
     buttons:
       - name: 启动自定义开发环境
         # 如存在,则将作为流水线 title,否则流水线使用默认 title；可支持环境变量替换(仅支持替换一级,环境变量指的是当前配置的 env 和 inputs。仅支持 ${xxx} 写法。)
@@ -49,22 +49,22 @@ branch:
             description: 选择所需的 CPU 核数(GPU集群将自动使用固定核数)
             type: select
             required: true
-            default: "8"
+            default: '8'
             options:
               - name: 1 核(仅限非GPU集群)
-                value: "1"
+                value: '1'
               - name: 2 核(仅限非GPU集群)
-                value: "2"
+                value: '2'
               - name: 4 核(仅限非GPU集群)
-                value: "4"
+                value: '4'
               - name: 8 核(AMD64/ARM64默认)
-                value: "8"
+                value: '8'
               - name: 16 核(ARM64最大/GPU标准固定)
-                value: "16"
+                value: '16'
               - name: 32 核(仅限AMD64/GPU H20固定)
-                value: "32"
+                value: '32'
               - name: 64 核(仅限AMD64架构)
-                value: "64"
+                value: '64'
           image_select:
             name: 镜像选择
             description: 选择预定义的开发环境镜像

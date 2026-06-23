@@ -9,4 +9,4 @@ workspace:
 fork:
   button:
     description: 🔥 你的仓库不错，现在是我的了！
-    hoverImage: ".cnb/image.png"
+    hoverImage: '.cnb/image.png'

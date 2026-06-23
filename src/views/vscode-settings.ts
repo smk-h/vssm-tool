@@ -63,7 +63,14 @@ export class VSCodeSettingsProvider implements SnapshottableProvider {
     try {
       // 1. 默认配置文件（只读，点击打开原始默认设置）
       this.settingsNodes.push(
-        new VSCodeSettingsNode('Default Settings', '', false, 'VS Code default settings (read-only)', '', 'default-settings')
+        new VSCodeSettingsNode(
+          'Default Settings',
+          '',
+          false,
+          'VS Code default settings (read-only)',
+          '',
+          'default-settings'
+        )
       );
 
       // 2. 用户配置文件
@@ -78,7 +85,14 @@ export class VSCodeSettingsProvider implements SnapshottableProvider {
       const remoteSettingsPath = this.getRemoteSettingsPath();
       if (remoteSettingsPath && fs.existsSync(remoteSettingsPath)) {
         this.settingsNodes.push(
-          new VSCodeSettingsNode('Remote Settings', remoteSettingsPath, false, 'Remote development settings', '', 'settings-file')
+          new VSCodeSettingsNode(
+            'Remote Settings',
+            remoteSettingsPath,
+            false,
+            'Remote development settings',
+            '',
+            'settings-file'
+          )
         );
       }
 
@@ -184,7 +198,13 @@ export class VSCodeSettingsProvider implements SnapshottableProvider {
         const settingsPath = path.join(folder.uri.fsPath, '.vscode', 'settings.json');
         if (fs.existsSync(settingsPath)) {
           nodes.push(
-            new VSCodeSettingsNode(folder.name, folder.uri.fsPath, true, `Workspace folder: ${folder.name}`, folder.uri.fsPath)
+            new VSCodeSettingsNode(
+              folder.name,
+              folder.uri.fsPath,
+              true,
+              `Workspace folder: ${folder.name}`,
+              folder.uri.fsPath
+            )
           );
         }
       }
@@ -228,7 +248,9 @@ export class VSCodeSettingsProvider implements SnapshottableProvider {
     const nodes: VSCodeSettingsNode[] = [];
     const settingsPath = path.join(dirPath, '.vscode', 'settings.json');
     if (fs.existsSync(settingsPath)) {
-      nodes.push(new VSCodeSettingsNode('settings.json', settingsPath, false, 'VSCode settings file', '', 'settings-file'));
+      nodes.push(
+        new VSCodeSettingsNode('settings.json', settingsPath, false, 'VSCode settings file', '', 'settings-file')
+      );
     }
     return nodes;
   }
