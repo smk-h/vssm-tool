@@ -1,6 +1,6 @@
 /**
  * @file VSCode 设置视图模块，展示 VSCode 所有可能的配置文件
- * @module views/vscodeSettingsView
+ * @module views/vscodeSettings
  * @details 原本是一个原生 TreeView（vssm-tool-vscode-settings），其内容现已搬进 chat webview 渲染，
  *          故改为实现 SnapshottableProvider：供 webview 取快照，点击文件节点打开对应设置文件。
  */

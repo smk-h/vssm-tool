@@ -3,7 +3,7 @@ import { registerSnapshottableProvider, type SnapNode, type SnapshottableProvide
 
 /**
  * @file 固定数据 provider（纯 webview 数据源）
- * @module tree-views/fixed-data-provider
+ * @module views/fixed-data
  * @details 原本是一个原生 TreeView（vssm-tool-fixed-data），其内容现已搬进 chat webview
  *          渲染，故移除了 TreeDataProvider / 原生命令 / InputBox 版 CRUD。
  *          现在只实现 SnapshottableProvider：供 webview 取快照 + CRUD 写回。

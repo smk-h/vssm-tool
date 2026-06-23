@@ -1,5 +1,5 @@
 /**
- * @file webview 侧共享类型（镜像扩展侧 src/tree-views/registry.ts 的契约）
+ * @file webview 侧共享类型（镜像扩展侧 src/views/registry.ts 的契约）
  * @module types
  */
 

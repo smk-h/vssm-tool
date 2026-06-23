@@ -1,6 +1,6 @@
 /**
  * @file 依赖视图模块，递归展示工作区 package.json 的依赖树
- * @module views/nodeDependenciesView
+ * @module views/nodeDependencies
  * @details 原本是一个原生 TreeView（vssm-tool-node-dependencies），其内容现已搬进 chat webview 渲染，
  *          故改为实现 SnapshottableProvider：供 webview 取快照。
  *          node_modules 是无界图，快照时需 **深度上限 + 环/重复检测**：

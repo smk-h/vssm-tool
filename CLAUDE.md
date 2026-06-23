@@ -26,7 +26,7 @@ npm run vsix:build     # package .vsix with vsce
 ### Module Layers
 
 - **`src/cmd/`** — Command handlers. `generateConfigs.ts` and `addToIgnore.ts` use generic factory functions (`registerGenerateConfigCommand()`, `registerAddToIgnoreCommand()`) that accept config objects, making it easy to add new generators or ignore targets.
-- **`src/tree-views/`** — Sidebar tree data providers (dependency explorer, config viewer, command list, template viewer, VS Code settings viewer, demo CRUD tree). All follow the VS Code `TreeDataProvider` pattern with `_onDidChangeTreeData` event emitters.
+- **`src/views/`** — Sidebar view data sources + the chat webview host. Most files implement the `SnapshottableProvider` contract (`getSnapshot()` / optional `applyAction()` / `refresh()`) defined in `registry.ts`, so the chat webview can render the dependency explorer, config viewer, command list, template viewer, VS Code settings viewer, and a demo CRUD tree. `chat-webview.ts` is the `WebviewViewProvider` that hosts the React UI built by `webview-ui/`.
 - **`src/language-features/`** — Document providers: `packageLinkProvider.ts` makes dependency names in package.json clickable to open node_modules; `markdownHover.ts` is currently disabled.
 - **`src/helpers/utils.ts`** — Shared output channel ("VSSM-Tool") with logging that auto-includes caller file:line from stack traces.
 - **`src/template/`** — Static scaffolding templates (`c-vscode/`, `cnb/`) copied into user workspaces by `initProject.ts`.

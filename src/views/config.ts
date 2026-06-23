@@ -1,6 +1,6 @@
 /**
  * @file 配置视图模块，展示 VSSM 工具所有配置项
- * @module views/configView
+ * @module views/config
  * @details 原本是一个原生 TreeView（vssm-tool-config），其内容现已搬进 chat webview 渲染，
  *          故改为实现 SnapshottableProvider：供 webview 取快照，点击配置项打开 VS Code 设置。
  */
@@ -51,7 +51,7 @@ export class ConfigViewProvider implements SnapshottableProvider {
    */
   private loadConfigFromPackageJson(): void {
     try {
-      // 获取 package.json 文件路径（out/tree-views → 根目录）
+      // 获取 package.json 文件路径（out/views → 根目录）
       const packageJsonPath = path.join(__dirname, '../../package.json');
       // 读取并解析 package.json 文件内容
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));

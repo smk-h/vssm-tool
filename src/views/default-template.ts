@@ -1,6 +1,6 @@
 /**
  * @file 默认模板视图模块，展示扫描到的 DefaultTemplate.* 文件
- * @module views/defaultTemplateView
+ * @module views/defaultTemplate
  * @details 原本是一个原生 TreeView（vssm-tool-default-template），其内容现已搬进 chat webview 渲染，
  *          故改为实现 SnapshottableProvider：供 webview 取快照，点击节点在编辑器打开该模板文件。
  */
@@ -40,7 +40,7 @@ export class DefaultTemplateProvider implements SnapshottableProvider {
   /**
    * @brief 扫描模板文件
    * @private
-   * @details __filename 运行时位于 out/tree-views/，'..' '..' 回到 out/；
+   * @details __filename 运行时位于 out/views/，'..' '..' 回到 out/；
    *          postbuild 已把 DefaultTemplate.* 拷贝到 out/，故在此扫描。
    */
   private scanTemplates(): void {

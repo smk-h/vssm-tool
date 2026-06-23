@@ -1,6 +1,6 @@
 /**
  * @file webview 可消费的 TreeView 快照注册表
- * @module tree-views/registry
+ * @module views/registry
  * @details 把各原生 TreeDataProvider 包装成统一的 SnapshottableProvider，
  *          chat webview 按消息按需取 getSnapshot()，渲染进 React。
  *          各 provider 在自己的 registerXxxView 里创建实例后调用

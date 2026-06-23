@@ -1,7 +1,7 @@
 /**
  * @file Webview View 聊天面板：UI 由 webview-ui 子工程（React+Vite）构建，
  *       扩展侧只负责装配一个加载构建产物的薄 HTML 壳（参考 Roo Code 的 getHtmlContent）。
- * @module views/chatWebviewView
+ * @module views/chatWebview
  * @details 1) 实现 WebviewViewProvider，resolveWebviewView 中注入 HTML 壳
  *          2. 开启 enableScripts，建立 localResourceRoots 白名单
  *          3. 通过 webview.postMessage / onDidReceiveMessage 做扩展 ⇄ 页面 双向通信

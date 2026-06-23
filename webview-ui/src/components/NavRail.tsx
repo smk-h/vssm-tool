@@ -24,7 +24,7 @@ function Icon({ box, children }: { box: string; children: ReactNode }) {
 
 /**
  * @brief 视图 icon key → Codicon 内联 SVG
- * @details key 与扩展侧 chat-webview-view.ts 的 VIEW_ICONS 对齐；
+ * @details key 与扩展侧 chat-webview.ts 的 VIEW_ICONS 对齐；
  *          路径取自 microsoft/vscode-codicons（comment-discussion / list-tree /
  *          settings-gear / file / package / terminal）。
  */

@@ -1,6 +1,6 @@
 /**
  * @file 命令视图模块，展示 VSSM 工具所有可用命令
- * @module views/commandsView
+ * @module views/commands
  * @details 原本是一个原生 TreeView（vssm-tool-cmd），其内容现已搬进 chat webview 渲染，
  *          故改为实现 SnapshottableProvider：供 webview 取快照，点击节点执行对应命令。
  */
@@ -47,7 +47,7 @@ export class CommandsViewProvider implements SnapshottableProvider {
    */
   private loadCommandsFromPackageJson(): void {
     try {
-      // 获取 package.json 文件路径（out/tree-views → 根目录）
+      // 获取 package.json 文件路径（out/views → 根目录）
       const packageJsonPath = path.join(__dirname, '../../package.json');
       // 读取并解析 package.json 文件内容
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));

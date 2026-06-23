@@ -19,13 +19,13 @@ import {
 } from './cmd/addToIgnore';
 import { registerMarkdownHoverProvider } from './language-features/markdownHover';
 import { registerPackageLinkProvider } from './language-features/packageLinkProvider';
-import { registerConfigView } from './tree-views/vssm-tool-config';
-import { registerDefaultTemplateView } from './tree-views/default-template-view';
-import { registerNodeDependenciesView } from './tree-views/vssm-tool-node-dependencies';
-import { registerCommandsView } from './tree-views/vssm-tool-cmd';
-import { registerFixedDataProvider } from './tree-views/fixed-data-provider';
-import { registerVSCodeSettingsView } from './tree-views/vscode-settings-view';
-import { registerChatWebviewView } from './tree-views/chat-webview-view';
+import { registerConfigView } from './views/config';
+import { registerDefaultTemplateView } from './views/default-template';
+import { registerNodeDependenciesView } from './views/node-dependencies';
+import { registerCommandsView } from './views/commands';
+import { registerFixedDataProvider } from './views/fixed-data';
+import { registerVSCodeSettingsView } from './views/vscode-settings';
+import { registerChatWebviewView } from './views/chat-webview';
 import { registerSendToClaudeCodeCommand } from './cmd/send-to-claude';
 import { registerInitProjectCommand } from './cmd/initProject';
 

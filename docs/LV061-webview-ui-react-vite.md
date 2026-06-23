@@ -45,7 +45,7 @@ webview-ui/dist/assets/        ← 真正的静态资源（JS/CSS/字体）
    └─ index.css
         │  asWebviewUri(...) 引用
         ▼
-chat-webview-view.ts           ← 运行时拼出 HTML 字符串（夹带 nonce / cspSource / 资源 URI）
+chat-webview.ts           ← 运行时拼出 HTML 字符串（夹带 nonce / cspSource / 资源 URI）
   _getHtmlForWebview()
         │  webview.html = 字符串
         ▼
@@ -105,7 +105,7 @@ vssm-tool/
 ├─ .vscodeignore / .gitignore   ← 打包/版本控制忽略规则
 │
 ├─ src/                         ← 扩展源码（Node 侧）
-│  ├─ tree-views/chat-webview-view.ts   ← 改造为薄 HTML 壳
+│  ├─ views/chat-webview.ts   ← 改造为薄 HTML 壳
 │  └─ helpers/webview.ts                ← getUri + getNonce 工具
 │
 └─ webview-ui/                  ← ★ 新增子工程（React + Vite）
@@ -298,7 +298,7 @@ export function getUri(webview: vscode.Webview, extensionUri: vscode.Uri, pathLi
 export function getNonce(): string { /* ... */ }
 ```
 
-### 2. `chat-webview-view.ts` —— 从 200 行模板缩成 20 行壳
+### 2. `chat-webview.ts` —— 从 200 行模板缩成 20 行壳
 
 `_handleMessage`、`postMessageToWebview`、`resolveWebviewView`、注册函数**全部不变**，只把 `_getHtmlForWebview` 换成加载构建产物的薄壳：
 
@@ -458,7 +458,7 @@ If you are using JSX, make sure to name the file with the .jsx or .tsx extension
 | `tsconfig.json` | 加 `"include": ["src"]`，防止根 tsc 污染 webview-ui |
 | `.vscodeignore` | 追加排除 `webview-ui/src`、`webview-ui/node_modules`、`index.html`、`vite.config.ts` |
 | `.gitignore` | 追加 `webview-ui/node_modules/`、`webview-ui/dist/` |
-| `src/tree-views/chat-webview-view.ts` | `_getHtmlForWebview` 改为加载构建产物的薄 HTML 壳；`getNonce`/`getUri` 改从 `helpers/webview` 引入 |
+| `src/views/chat-webview.ts` | `_getHtmlForWebview` 改为加载构建产物的薄 HTML 壳；`getNonce`/`getUri` 改从 `helpers/webview` 引入 |
 
 ## 十二、 后续步骤
 
