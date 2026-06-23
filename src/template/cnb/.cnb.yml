@@ -1,8 +1,8 @@
 # .cnb.yml
 include:
-- .cnb/workflows/cnb-custom-env.yml
-- .cnb/workflows/cnb-build-image.yml
-- .cnb/workflows/cnb-crontab.yml
+  - .cnb/workflows/cnb-custom-env.yml
+  - .cnb/workflows/cnb-build-image.yml
+# - .cnb/workflows/cnb-crontab.yml
 
 $:
   vscode:
