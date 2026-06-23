@@ -54,7 +54,7 @@ body {
   padding: 0;
   border-right-color: var(--vscode-sideBar-border, var(--vscode-panel-border));
 }
-/* 单个导航按钮：占满轨道宽度，正方形 Activity Bar 槽位 */
+/* 单个导航按钮：占满轨道宽度，正方形导航槽位 */
 .rail-btn {
   position: relative;
   width: 100%;
@@ -64,24 +64,22 @@ body {
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--vscode-activityBar-inactiveForeground, var(--vscode-foreground));
-  opacity: 0.85;
+  /* 未选中：descriptionForeground 在明暗主题下均为可读的弱化色，不再叠加 opacity
+     （原 activityBar-inactiveForeground + opacity:0.85 双重弱化会使浅色主题下图标过淡，Roo Code 同款处理） */
+  color: var(--vscode-descriptionForeground, var(--vscode-foreground));
   cursor: pointer;
   transition:
     background-color 0.1s ease,
-    color 0.1s ease,
-    opacity 0.1s ease;
+    color 0.1s ease;
 }
 .rail-btn:hover {
   background: var(--vscode-list-hoverBackground);
-  color: var(--vscode-activityBar-foreground, var(--vscode-foreground));
-  opacity: 1;
+  color: var(--vscode-foreground);
 }
-/* 选中态：左侧 2px 强调条 + 高亮背景 + 全亮前景（VS Code Activity Bar 同款指示器） */
+/* 选中态：列表选中色 + 全亮前景 + 左侧 2px 强调条（bg/fg 成对取自主题，明暗主题下均有对比） */
 .rail-btn.active {
-  background: var(--vscode-activityBar-activeBackground, var(--vscode-list-activeSelectionBackground));
-  color: var(--vscode-activityBar-foreground, var(--vscode-foreground));
-  opacity: 1;
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground, var(--vscode-foreground));
 }
 .rail-btn.active::before {
   content: '';
@@ -90,7 +88,7 @@ body {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: var(--vscode-activityBar-activeBorder, var(--vscode-focusBorder));
+  background: var(--vscode-list-activeSelectionForeground, var(--vscode-focusBorder));
 }
 .rail-btn:focus-visible {
   outline: 1px solid var(--vscode-focusBorder);
