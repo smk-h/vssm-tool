@@ -22,7 +22,7 @@ $:
       # https://docs.cnb.cool/zh/build/build-node.html
       # runner:
       #   cpus: 32
-      #   tags: cnb:arch:amd64:gpu:H20
+      #   tags: cnb:arch:amd64:gpu:L40
       imports:
         - https://cnb.cool/sumu.k/secret-key/-/blob/main/llm.yml
       services:

@@ -37,13 +37,10 @@ branch:
                 description: ARM64/v8架构,CPU可配置1-16核
               - name: AMD64 + GPU(标准)- 16核固定,48GB显存
                 value: cnb:arch:amd64:gpu
-                description: AMD64架构+GPU,48GB显存共享,CPU固定16核
-              - name: AMD64 + GPU H20 - 32核固定,96GB显存
-                value: cnb:arch:amd64:gpu:H20
-                description: AMD64架构+GPU H20,96GB显存共享,CPU固定32核
+                description: AMD64架构+GPU,CPU固定16核,48GB显存,不可调整核数
               - name: AMD64 + GPU L40 - 16核固定,48GB显存
                 value: cnb:arch:amd64:gpu:L40
-                description: AMD64架构+GPU L40,48GB显存共享,CPU固定16核
+                description: AMD64架构+NVIDIA L40 GPU,CPU固定16核,48GB显存,不可调整核数
           cpu_cores:
             name: CPU 核数
             description: 选择所需的 CPU 核数(GPU集群将自动使用固定核数)
@@ -59,9 +56,9 @@ branch:
                 value: '4'
               - name: 8 核(AMD64/ARM64默认)
                 value: '8'
-              - name: 16 核(ARM64最大/GPU标准固定)
+              - name: 16 核(ARM64最大/GPU集群固定)
                 value: '16'
-              - name: 32 核(仅限AMD64/GPU H20固定)
+              - name: 32 核(仅限AMD64架构)
                 value: '32'
               - name: 64 核(仅限AMD64架构)
                 value: '64'
@@ -82,6 +79,14 @@ branch:
                 value: docker.cnb.cool/sumu.k/docker-learning/node-24.x
               - name: 苏木 go-1.26 开发环境
                 value: docker.cnb.cool/sumu.k/docker-learning/go-1.26
+              - name: 嵌入式开发基础环境
+                value: docker.cnb.cool/smk.k/embedded/dev-env/embedded-dev-env
+              - name: LubanCat 开发环境
+                value: docker.cnb.cool/smk.k/lubancat/dev-env/lubancat-dev-env
+              - name: Alpha 开发环境
+                value: docker.cnb.cool/smk.k/alpha/dev-env/alpha-dev-env
+              - name: QEMU 开发环境
+                value: docker.cnb.cool/sumu.h/qemu/qemu-env/qemu-env
           custom_image_url:
             name: 自定义镜像地址
             description: 输入自定义镜像地址,优先级高于下拉选择镜像(可选)
