@@ -69,6 +69,40 @@ npm run lint         # 仅执行 eslint 检查
 npm run format:fix   # prettier 格式化
 ```
 
+#### 3.4 在 CNB 云原生开发环境下启动调试
+
+CNB 云开发环境（`.cnb.yml` 的 `vscode` 目标）是**浏览器里运行的 code-server**，扩展调试有两条路径，按需选择：
+
+**方式 A：本地桌面 VS Code + Remote-SSH（支持断点调试，推荐）**
+
+Extension Development Host 是桌面 Electron 窗口，浏览器环境无法拉起，
+因此需从本地桌面 VS Code 远程连接云环境后再调试：
+
+1. 本地 VS Code 通过 **Remote-SSH** 连接 CNB 云环境，打开 `/workspace`
+2. 打开「运行和调试」面板，下拉框选择 **`Run Extension`**（不要聚焦 `tasks.json` 后按 F5，否则会提示"没有用于调试 JSON with Comments 的扩展"）
+3. 按 **F5**，等待 preLaunchTask 构建链跑完（webview 构建 → tsc → 模板拷贝），
+   本地会弹出 **`[扩展开发宿主]`** 窗口，扩展代码从远端 `/workspace` 实时加载，支持断点
+
+> 注意：不要用编辑器右上角 ▶ 或终端执行 `node out/extension.js`——`vscode` 模块
+> 只存在于扩展宿主进程内部，直接运行必然报 `Cannot find module 'vscode'`。
+
+**方式 B：纯浏览器热装验证（无断点，快速看效果）**
+
+不离开浏览器时，可将构建产物直接安装进 code-server 的扩展目录：
+
+```bash
+npm run vscode:prepublish   # webview 构建 + tsc 编译 + 模板拷贝
+VERSION=$(node -p "require('./package.json').version")
+D=~/.local/share/code-server/extensions/ms-vs-extensions.vssm-tool-$VERSION-universal
+mkdir -p "$D/webview-ui"
+cp package.json LICENSE.md "$D/"
+cp -r out resources "$D/"
+cp -r webview-ui/dist "$D/webview-ui/"
+```
+
+然后 `Ctrl+Shift+P` → **`Developer: Reload Window`**，侧边栏出现 VSSM-TOOL 图标即安装成功。
+这种方式每次改动后需重新执行上述命令并重载窗口。
+
 ### 4. 打包 VSIX
 
 ```bash
