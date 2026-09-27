@@ -36,7 +36,7 @@ const VIEW_ICONS: Record<string, string> = {
   'vssm-tool-cmd': 'cmd',
   'vssm-tool-config': 'settings',
   'vssm-tool-default-template': 'file',
-  'vssm-tool-vscode-settings': 'settings',
+  'vssm-tool-vscode-settings': 'tasklist',
   'vssm-tool-node-dependencies': 'dep'
 };
 
