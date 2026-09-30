@@ -132,12 +132,53 @@ export async function getTasksJsonTasks(
 }
 
 /**
+ * @brief QuickPick 选择器签名：给定候选项与标题，返回选中项（取消时为 undefined）
+ * @details 抽出为可注入参数，便于在不弹出真实 UI 的情况下测试命令流程。
+ */
+export type QuickPickSelector = (
+  items: vscode.QuickPickItem[],
+  title: string
+) => Promise<vscode.QuickPickItem | undefined>;
+
+/** @brief 任务执行器签名（默认为 vscode.tasks.executeTask） */
+export type TaskExecutor = (task: vscode.Task) => Thenable<vscode.TaskExecution>;
+
+/** @brief 默认选择器：使用 VS Code 的 QuickPick 交互 */
+async function defaultQuickPickSelector(
+  items: vscode.QuickPickItem[],
+  title: string
+): Promise<vscode.QuickPickItem | undefined> {
+  // 创建快速选择框
+  const quickPick = vscode.window.createQuickPick<vscode.QuickPickItem>();
+  quickPick.items = items; // 设置选项列表
+  quickPick.title = title; // 设置标题
+
+  quickPick.show(); // 显示选择框
+
+  // 等待用户选择或取消
+  return new Promise<vscode.QuickPickItem | undefined>((resolve) => {
+    // 用户确认选择时触发
+    quickPick.onDidAccept(() => {
+      resolve(quickPick.activeItems[0]); // 返回当前选中的项
+      quickPick.hide(); // 隐藏选择框
+    });
+    // 选择框被隐藏时触发(用户取消)
+    quickPick.onDidHide(() => resolve(undefined));
+  });
+}
+
+/**
  * @brief 显示并执行npm任务/脚本
  * @details 根据配置从package.json或tasks.json获取任务，显示选择列表并执行
+ * @param select 选择器（默认真实 QuickPick；测试可注入替身）
+ * @param executeTask 任务执行器（默认真实 vscode.tasks；测试可注入替身）
  * @async
  * @throws {Error} 当读取文件失败时抛出错误
  */
-async function showNpmTasks() {
+export async function showNpmTasks(
+  select: QuickPickSelector = defaultQuickPickSelector,
+  executeTask: TaskExecutor = (task) => vscode.tasks.executeTask(task)
+): Promise<void> {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders || workspaceFolders.length === 0) {
     vscode.window.showErrorMessage('No workspace folder found');
@@ -165,23 +206,8 @@ async function showNpmTasks() {
       return;
     }
 
-    // 创建快速选择框
-    const quickPick = vscode.window.createQuickPick<vscode.QuickPickItem>();
-    quickPick.items = items; // 设置选项列表
-    quickPick.title = title; // 设置标题
-
-    quickPick.show(); // 显示选择框
-
-    // 等待用户选择或取消
-    const selectedItem = await new Promise<vscode.QuickPickItem | undefined>((resolve) => {
-      // 用户确认选择时触发
-      quickPick.onDidAccept(() => {
-        resolve(quickPick.activeItems[0]); // 返回当前选中的项
-        quickPick.hide(); // 隐藏选择框
-      });
-      // 选择框被隐藏时触发(用户取消)
-      quickPick.onDidHide(() => resolve(undefined));
-    });
+    // 交给选择器（真实 QuickPick 或测试替身）等待用户选择
+    const selectedItem = await select(items, title);
 
     if (selectedItem) {
       // 检查是否有选中的项目
@@ -227,7 +253,7 @@ async function showNpmTasks() {
 
             if (foundTasks.length > 0) {
               // 如果找到匹配任务
-              await vscode.tasks.executeTask(foundTasks[0]); // 执行第一个匹配的任务
+              await executeTask(foundTasks[0]); // 执行第一个匹配的任务
             } else {
               // 如果未找到匹配任务
               const availableTasks = allTasks.map((t) => t.name || t.definition?.label).join(', '); // 获取所有可用任务名
@@ -240,7 +266,7 @@ async function showNpmTasks() {
           return; // 复合任务执行完成后返回
         }
       }
-      vscode.tasks.executeTask(task);
+      executeTask(task);
     }
   } catch (error) {
     vscode.window.showErrorMessage(`Error: ${error}`);
@@ -276,7 +302,7 @@ export function registerNpmRunTaskCommand(context: vscode.ExtensionContext): str
   // 注册命令处理函数
   const disposable = vscode.commands.registerCommand(
     commandName, // 命令ID
-    showNpmTasks // 命令处理函数
+    () => showNpmTasks() // 命令处理函数（不带参数，使用默认选择器与执行器）
   );
 
   // 将状态栏按钮和命令注册添加到扩展上下文

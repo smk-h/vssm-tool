@@ -69,6 +69,46 @@ async function initProjectFromTemplate(
   }
 }
 
+/** @brief QuickPick 候选项（在 QuickPickItem 基础上携带项目类型标识 value） */
+export interface ProjectTypeQuickPickItem extends vscode.QuickPickItem {
+  value: string;
+}
+
+/** @brief 项目类型选择器签名：返回用户选中项；取消时返回 undefined */
+export type ProjectTypeSelector = (items: ProjectTypeQuickPickItem[]) => Promise<ProjectTypeQuickPickItem | undefined>;
+
+/**
+ * @brief 默认选择器：使用 VS Code QuickPick 让用户选择项目类型
+ */
+async function defaultProjectTypeSelector(
+  items: ProjectTypeQuickPickItem[]
+): Promise<ProjectTypeQuickPickItem | undefined> {
+  return vscode.window.showQuickPick(items, {
+    placeHolder: 'Select project type to initialize',
+    title: 'Init Project'
+  });
+}
+
+/**
+ * @brief 主命令交互流程：选择项目类型后执行对应模板初始化
+ * @details 选择器抽出为可注入参数，便于在不弹出真实 UI 的情况下测试分派逻辑。
+ * @param resourceRoot 运行时资源根目录（out/）的绝对路径
+ * @param select 项目类型选择器（默认真实 QuickPick；测试可注入替身）
+ * @return 无返回值
+ */
+export async function initProjectInteractive(
+  resourceRoot: string,
+  select: ProjectTypeSelector = defaultProjectTypeSelector
+): Promise<void> {
+  const selected = await select(projectTypes);
+
+  if (!selected) {
+    return;
+  }
+
+  await initProjectFromTemplate(resourceRoot, selected.value, selected.label);
+}
+
 /**
  * @brief 注册项目初始化相关的所有命令
  * @details 注册一个主命令vssm-tool.initProject（弹出QuickPick让用户选择项目类型），
@@ -85,18 +125,9 @@ export function registerInitProjectCommand(context: vscode.ExtensionContext): st
   const resourceRoot = context.asAbsolutePath('out');
 
   // Register the main init command (shows QuickPick)
-  const initDisposable = vscode.commands.registerCommand('vssm-tool.initProject', async () => {
-    const selected = await vscode.window.showQuickPick(projectTypes, {
-      placeHolder: 'Select project type to initialize',
-      title: 'Init Project'
-    });
-
-    if (!selected) {
-      return;
-    }
-
-    await initProjectFromTemplate(resourceRoot, selected.value, selected.label);
-  });
+  const initDisposable = vscode.commands.registerCommand('vssm-tool.initProject', () =>
+    initProjectInteractive(resourceRoot)
+  );
   context.subscriptions.push(initDisposable);
 
   // Register individual project type commands for the submenu
