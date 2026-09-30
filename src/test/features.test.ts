@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
-import { withFileRetry } from '../helpers/utils';
-import { showNpmTasks } from '../cmd/npm-run-task';
-import { initProjectInteractive } from '../cmd/init-project';
+import { withFileRetry } from '../shared/fs';
+import { showNpmTasks } from '../commands/npm-run-task';
+import { initProjectInteractive } from '../commands/init-project';
 
 /**
  * @file 命令级集成测试：在真实 Extension Host 中执行命令，

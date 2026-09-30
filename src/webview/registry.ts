@@ -1,6 +1,6 @@
 /**
  * @file webview 可消费的 TreeView 快照注册表
- * @module views/registry
+ * @module webview/registry
  * @details 各 provider 实现统一的 SnapshottableProvider 契约并调用
  *          registerSnapshottableProvider() 挂进来，chat webview 按消息按需取
  *          getSnapshot()，渲染进 React 导航栏，无需改动 extension.ts 注册流程。

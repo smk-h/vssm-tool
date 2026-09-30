@@ -1,11 +1,11 @@
 /**
  * @file 模板目录拷贝器：同名拷贝 + 特殊目标改名拷贝，逐条容错并输出明细报告
- * @module cmd/init-project/copier
+ * @module commands/init-project/copier
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { withFileRetry } from '../../helpers/utils';
+import { withFileRetry } from '../../shared/fs';
 import type { TemplateCopyReport, TemplateCopyResult } from './types';
 
 /**

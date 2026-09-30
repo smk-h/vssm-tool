@@ -2,6 +2,7 @@ import * as fs from 'fs';
 
 /**
  * @file npm registry 查询工具：初始化工程模板时把 devDependencies 刷新为当时最新版本。
+ * @module commands/init-project/npm-registry
  */
 
 /** @brief 单次查询超时毫秒数 */

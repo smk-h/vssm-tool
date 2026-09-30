@@ -1,6 +1,6 @@
 /**
  * @file webview 通用工具：getUri（资源地址转换）+ getNonce（CSP nonce）
- * @module helpers/webview
+ * @module webview/resources
  */
 import * as vscode from 'vscode';
 

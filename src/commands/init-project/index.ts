@@ -1,12 +1,13 @@
 /**
- * @file 工程初始化命令装配入口
- * @module cmd/init-project
+ * @file 工程初始化能力：主命令 + 各项目类型子命令
+ * @module commands/init-project
  */
 
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { logToVssmToolChannel, logErrorToVssmToolChannel } from '../../helpers/utils';
+import { logToVssmToolChannel, logErrorToVssmToolChannel } from '../../shared/logger';
+import type { Registration } from '../../shared/registration';
 import { copyTemplateTree } from './copier';
 import { PROJECT_TEMPLATES, projectTypes } from './templates';
 
@@ -109,35 +110,38 @@ export async function initProjectInteractive(
   await initProjectFromTemplate(resourceRoot, selected.value, selected.label);
 }
 
+/** @brief 注册标识（去重键 + 日志名） */
+const REGISTRATION_ID = 'init-project';
+
 /**
- * @brief 注册项目初始化相关的所有命令
- * @details 注册一个主命令vssm-tool.initProject（弹出QuickPick让用户选择项目类型），
- *          并为每种项目类型动态注册对应的子命令（如vssm-tool.initProject.c-vscode），
- *          用于右键子菜单直接选择项目类型。
- *          新增项目类型时只需扩展 templates.ts 的 projectTypes 与 PROJECT_TEMPLATES，
- *          无需改本函数。
- * @param context VS Code扩展上下文，用于注册命令到context.subscriptions
- * @return 返回主命令的命令ID字符串"vssm-tool.initProject"
+ * @brief 工程初始化能力
+ * @details 注册一个主命令 vssm-tool.initProject（弹 QuickPick 让用户选择项目类型），
+ *          并为每种项目类型注册对应子命令（如 vssm-tool.initProject.c-vscode），
+ *          供右键子菜单直接选择。
+ *          新增项目类型只需扩展 templates.ts 的 projectTypes 与 PROJECT_TEMPLATES，无需改本文件。
  */
-export function registerInitProjectCommand(context: vscode.ExtensionContext): string {
-  // 运行时资源根：postbuild 将 src/template 树拷贝到 out/template，
-  // 开发态与安装态一致，故统一以 out/ 为资源根解析（避免模块内部反推位置）
-  const resourceRoot = context.asAbsolutePath('out');
+export const initProjectRegistration: Registration = {
+  id: REGISTRATION_ID,
+  register(context) {
+    // 运行时资源根：postbuild 将 src/template 树拷贝到 out/template，
+    // 开发态与安装态一致，故统一以 out/ 为资源根解析（避免模块内部反推位置）
+    const resourceRoot = context.asAbsolutePath('out');
 
-  // Register the main init command (shows QuickPick)
-  const initDisposable = vscode.commands.registerCommand('vssm-tool.initProject', () =>
-    initProjectInteractive(resourceRoot)
-  );
-  context.subscriptions.push(initDisposable);
-
-  // Register individual project type commands for the submenu
-  for (const pt of projectTypes) {
-    const cmdId = `vssm-tool.initProject.${pt.value}`;
-    const disposable = vscode.commands.registerCommand(cmdId, () =>
-      // 返回 Promise：让 executeCommand 可等待初始化（含 postCopy）完成
-      initProjectFromTemplate(resourceRoot, pt.value, pt.label)
+    // 主命令：弹出项目类型选择
+    context.subscriptions.push(
+      vscode.commands.registerCommand('vssm-tool.initProject', () => initProjectInteractive(resourceRoot))
     );
-    context.subscriptions.push(disposable);
+
+    // 各项目类型的子命令：供右键子菜单直接选择
+    for (const pt of projectTypes) {
+      const cmdId = `vssm-tool.initProject.${pt.value}`;
+      const disposable = vscode.commands.registerCommand(cmdId, () =>
+        // 返回 Promise：让 executeCommand 可等待初始化（含 postCopy）完成
+        initProjectFromTemplate(resourceRoot, pt.value, pt.label)
+      );
+      context.subscriptions.push(disposable);
+    }
+
+    return REGISTRATION_ID;
   }
-  return 'vssm-tool.initProject';
-}
+};

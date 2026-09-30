@@ -4,7 +4,7 @@ import {
   treeViewRegistry,
   type SnapNode,
   type SnapshottableProvider
-} from '../views/registry';
+} from '../webview/registry';
 
 /**
  * @file 快照注册表纯逻辑测试：不经过 UI，直接验证 provider 契约与查询语义。

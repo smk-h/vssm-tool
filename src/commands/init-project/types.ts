@@ -1,6 +1,6 @@
 /**
  * @file init-project 模块共享契约
- * @module cmd/init-project/types
+ * @module commands/init-project/types
  */
 
 /**

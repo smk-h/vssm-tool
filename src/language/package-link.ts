@@ -1,7 +1,12 @@
-// 导入VSCode API模块
+/**
+ * @file package.json 依赖项链接：点击包名跳转到 node_modules 中对应的包
+ * @module language/package-link
+ */
+
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import type { Registration } from '../shared/registration';
 
 /**
  * @class PackageLinkProvider
@@ -151,32 +156,38 @@ export class PackageLinkProvider implements vscode.DocumentLinkProvider {
   }
 }
 
+/** @brief 注册标识（去重键 + 日志名） */
+const REGISTRATION_ID = 'package-link';
+
 /**
- * @brief 注册package.json依赖项链接提供者
- * @param context VSCode扩展上下文
+ * @brief package.json 依赖项链接能力
+ * @details 注册 JSON 文档链接提供者，并顺带把 node_modules 下打开的 README 定位到资源管理器。
  */
-export function registerPackageLinkProvider(context: vscode.ExtensionContext) {
-  const providerName = 'packageLink';
-  // 创建链接提供者实例
-  const provider = new PackageLinkProvider();
-  // 注册到JSON语言
-  context.subscriptions.push(
-    vscode.languages.registerDocumentLinkProvider({ language: 'json', pattern: '**/package.json' }, provider)
-  );
+export const packageLinkRegistration: Registration = {
+  id: REGISTRATION_ID,
+  register(context) {
+    // 创建链接提供者实例并注册到 JSON 语言
+    context.subscriptions.push(
+      vscode.languages.registerDocumentLinkProvider(
+        { language: 'json', pattern: '**/package.json' },
+        new PackageLinkProvider()
+      )
+    );
 
-  // 监听活动编辑器变化事件
-  context.subscriptions.push(
-    vscode.window.onDidChangeActiveTextEditor((editor) => {
-      if (
-        editor &&
-        editor.document.fileName.includes('node_modules') &&
-        editor.document.fileName.endsWith('README.md')
-      ) {
-        // 在资源管理器中显示当前文件
-        vscode.commands.executeCommand('revealInExplorer', editor.document.uri);
-      }
-    })
-  );
+    // 监听活动编辑器变化事件
+    context.subscriptions.push(
+      vscode.window.onDidChangeActiveTextEditor((editor) => {
+        if (
+          editor &&
+          editor.document.fileName.includes('node_modules') &&
+          editor.document.fileName.endsWith('README.md')
+        ) {
+          // 在资源管理器中显示当前文件
+          vscode.commands.executeCommand('revealInExplorer', editor.document.uri);
+        }
+      })
+    );
 
-  return providerName;
-}
+    return REGISTRATION_ID;
+  }
+};

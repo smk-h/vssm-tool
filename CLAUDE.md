@@ -21,14 +21,14 @@ npm run vsix:build     # package .vsix with vsce
 
 ### Entry Point & Registration Pattern
 
-`src/extension.ts` — `activate()` declares all commands/views in a single `commands` object with `{ register, enabled }` entries. A `tryRegister()` helper iterates with duplicate prevention via a `Set`.
+`src/extension.ts` — `activate()` iterates a single `registrations` array of `Registration` objects (`{ id, enabled?, register }`), skipping entries with `enabled: false` and de-duplicating by `id`. Each feature module registers its own commands and each layer (`commands/`, `language/`, `webview/`) lists its own capabilities in its `index.ts`, so the entry point is a pure aggregator.
 
 ### Module Layers
 
-- **`src/cmd/`** — Command handlers: `generateConfigs.ts` and `addToIgnore.ts` use generic factory functions (`registerGenerateConfigCommand()`, `registerAddToIgnoreCommand()`) that accept config objects; `npm-run-task.ts` registers the npm task runner; `init-project/` scaffolds projects from `src/template/`.
-- **`src/views/`** — The chat webview host. `chat-webview.ts` is the `WebviewViewProvider` that hosts the React UI built by `webview-ui/`; `registry.ts` keeps the `SnapshottableProvider` contract (`getSnapshot()` / optional `refresh()`) and the `treeViewRegistry` as an extension point for feeding view snapshots into the webview (no providers are registered; the webview nav rail is a static single Chat entry).
-- **`src/language-features/`** — Document providers: `packageLinkProvider.ts` makes dependency names in package.json clickable to open node_modules; `markdownHover.ts` is currently disabled.
-- **`src/helpers/utils.ts`** — Shared output channel ("VSSM-Tool") with logging that auto-includes caller file:line from stack traces.
+- **`src/commands/`** — User-triggered capabilities, one directory (or file) per feature, each exporting a `Registration` (contract in `../shared/registration.ts`) that registers all of its own commands: `add-to-ignore/` (3 commands driven by a target table), `generate-configs/` (3 commands sharing `generate-config-file.ts`), `npm-run-task/` (task sources read in `task-sources.ts`), and `init-project/` (scaffolds from `src/template/`, including the npm-registry version refresh).
+- **`src/language/`** — Document providers: `package-link.ts` makes dependency names in package.json clickable to open node_modules; `markdown-hover.ts` is currently disabled (`enabled: false` on its Registration).
+- **`src/webview/`** — The chat webview host: `host.ts` is the `WebviewViewProvider` serving the React UI built by `webview-ui/`; `resources.ts` holds `getUri`/`getNonce`; `registry.ts` keeps the `SnapshottableProvider` contract and `treeViewRegistry` as a (currently unused) extension point.
+- **`src/shared/`** — Cross-cutting utilities: `logger.ts` (the "VSSM-Tool" output channel, prefixing caller file:line from stack traces) and `fs.ts` (`withFileRetry`).
 - **`src/template/`** — Static scaffolding templates (`c-vscode/`, `cnb/`, `npm-package/`) copied into user workspaces by `initProject.ts`; shared default configs live in `default/DefaultTemplate.*`.
 
 ### Build-time Template Copy

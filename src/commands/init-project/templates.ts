@@ -1,6 +1,6 @@
 /**
  * @file 各项目类型的模板配置登记表：新增项目类型只需扩展本文件
- * @module cmd/init-project/templates
+ * @module commands/init-project/templates
  */
 
 import * as vscode from 'vscode';
@@ -11,7 +11,7 @@ import {
   fetchLatestNpmVersionInMajor,
   mergePackageJsonTemplate,
   refreshDevDependencyVersions
-} from '../../helpers/npmRegistry';
+} from './npm-registry';
 import type { ProjectTemplateConfig } from './types';
 
 /**

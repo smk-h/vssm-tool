@@ -1,5 +1,10 @@
-// 导入VSCode API模块
+/**
+ * @file Markdown 标题悬停：鼠标停在标题上时显示级别与文本
+ * @module language/markdown-hover
+ */
+
 import * as vscode from 'vscode';
+import type { Registration } from '../shared/registration';
 
 // 定义匹配Markdown标题的正则表达式
 // 使用命名捕获组提取标题级别(#的数量)和标题文本
@@ -55,15 +60,19 @@ export class MarkdownHoverProvider implements vscode.HoverProvider {
   }
 }
 
+/** @brief 注册标识（去重键 + 日志名） */
+const REGISTRATION_ID = 'markdown-hover';
+
 /**
- * 注册Markdown悬停提供者
- * @param context VSCode扩展上下文
+ * @brief Markdown 标题悬停能力
+ * @details 当前默认下线（enabled: false），保留实现以便随时启用。
  */
-export function registerMarkdownHoverProvider(context: vscode.ExtensionContext) {
-  const providerName = 'markdownHover';
-  // 创建悬停提供者实例
-  const provider = new MarkdownHoverProvider();
-  // 注册到Markdown语言
-  context.subscriptions.push(vscode.languages.registerHoverProvider('markdown', provider));
-  return providerName;
-}
+export const markdownHoverRegistration: Registration = {
+  id: REGISTRATION_ID,
+  enabled: false,
+  register(context) {
+    // 创建悬停提供者实例并注册到 Markdown 语言
+    context.subscriptions.push(vscode.languages.registerHoverProvider('markdown', new MarkdownHoverProvider()));
+    return REGISTRATION_ID;
+  }
+};

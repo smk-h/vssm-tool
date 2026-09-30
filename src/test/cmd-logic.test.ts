@@ -3,13 +3,13 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { getPackageJsonScripts, getTasksJsonTasks } from '../cmd/npm-run-task';
+import { getPackageJsonScripts, getTasksJsonTasks } from '../commands/npm-run-task/task-sources';
 import {
   applyLatestVersions,
   mergePackageJsonTemplate,
   pickLatestWithinMajor,
   refreshDevDependencyVersions
-} from '../helpers/npmRegistry';
+} from '../commands/init-project/npm-registry';
 
 /**
  * @file 命令纯逻辑单元测试：不依赖打开的工作区与 UI，

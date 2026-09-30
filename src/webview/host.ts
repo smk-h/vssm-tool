@@ -1,7 +1,7 @@
 /**
  * @file Webview View 聊天面板：UI 由 webview-ui 子工程（React+Vite）构建，
  *       扩展侧只负责装配一个加载构建产物的薄 HTML 壳（参考 Roo Code 的 getHtmlContent）。
- * @module views/chatWebview
+ * @module webview/host
  * @details 1) 实现 WebviewViewProvider，resolveWebviewView 中注入 HTML 壳
  *          2. 开启 enableScripts，建立 localResourceRoots 白名单
  *          3. 通过 webview.postMessage / onDidReceiveMessage 做扩展 ⇄ 页面 双向通信
@@ -10,9 +10,10 @@
  */
 
 import * as vscode from 'vscode';
-import { logToVssmToolChannel } from '../helpers/utils';
-import { getNonce, getUri } from '../helpers/webview';
+import { logToVssmToolChannel } from '../shared/logger';
+import type { Registration } from '../shared/registration';
 import { treeViewRegistry } from './registry';
+import { getNonce, getUri } from './resources';
 
 /**
  * @brief 聊天 Webview View 提供者
@@ -166,18 +167,26 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
   }
 }
 
+/** @brief 注册标识（去重键 + 日志名） */
+const REGISTRATION_ID = 'chat-webview';
+
 /**
- * @brief 注册聊天 Webview View
- * @param {vscode.ExtensionContext} context - 扩展上下文
- * @returns {string} 视图 ID，供 extension.ts 去重注册使用
+ * @brief 聊天 Webview View 能力
+ * @details 视图类型 vssm-tool-chat 与 package.json 的 views 声明保持一致。
  */
-export function registerChatWebviewView(context: vscode.ExtensionContext): string {
-  const provider = new ChatWebviewViewProvider(context.extensionUri);
-  context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(ChatWebviewViewProvider.viewType, provider, {
-      // 视图隐藏时不销毁，保留输入与滚动状态（代价：常驻内存）
-      webviewOptions: { retainContextWhenHidden: true }
-    })
-  );
-  return ChatWebviewViewProvider.viewType;
-}
+export const chatWebviewRegistration: Registration = {
+  id: REGISTRATION_ID,
+  register(context) {
+    context.subscriptions.push(
+      vscode.window.registerWebviewViewProvider(
+        ChatWebviewViewProvider.viewType,
+        new ChatWebviewViewProvider(context.extensionUri),
+        {
+          // 视图隐藏时不销毁，保留输入与滚动状态（代价：常驻内存）
+          webviewOptions: { retainContextWhenHidden: true }
+        }
+      )
+    );
+    return REGISTRATION_ID;
+  }
+};
