@@ -150,6 +150,9 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
           // 只显示工作区内的文件，对外部文件会静默无效——这里用系统文件资源管理器并选中它。
           // 注意 id 是大写 OS（小写 Os 会 not found，命令 id 区分大小写）
           this._executeOrWarn('revealFileInOS', nodeUri);
+        } else if (data?.action === 'copyPath') {
+          // 复制文件系统原生分隔符的绝对路径（Windows 反斜杠 / POSIX 正斜杠）
+          void vscode.env.clipboard.writeText(nodeUri.fsPath);
         } else if (data?.action === 'rename' && typeof data?.name === 'string') {
           void this._renameNode(String(data?.viewId ?? ''), nodeUri, data.name);
         }

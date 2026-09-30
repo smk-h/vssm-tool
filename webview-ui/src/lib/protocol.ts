@@ -64,7 +64,7 @@ export interface SnapNode {
 }
 
 /** @brief 树节点右键菜单的动作（扩展侧 nodeContextMenu 处理） */
-export type NodeContextAction = 'reveal' | 'rename';
+export type NodeContextAction = 'reveal' | 'copyPath' | 'rename';
 
 /** @brief 页面 → 扩展 */
 export type WebviewMessage =
