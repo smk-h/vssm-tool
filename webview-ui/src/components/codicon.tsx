@@ -33,6 +33,14 @@ const ICONS = {
         d: 'M9.1 4.4L8.6 2H7.4l-.5 2.4-.7.3-2-1.3-.9.8 1.3 2-.2.7-2.4.5v1.2l2.4.5.3.7-1.3 2 .9.8 2-1.3.7.3.5 2.4h1.2l.5-2.4.7-.3 2 1.3.8-.8-1.3-2 .3-.7 2.4-.5V8.5l-2.4-.5-.3-.7 1.3-2-.8-.8-2 1.3-.7-.3zM9.4 1l.5 2.4L12 2l2 2-1.4 2.1 2.4.4v3l-2.4.5L14 12l-2 2-2.1-1.4-.5 2.4h-3l-.5-2.4L4 14l-2-2 1.4-2.1L1 9.4v-3l2.4-.5L2 4l2-2 2.1 1.4.4-2.4h3zM8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0-1a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'
       }
     ]
+  },
+  /** close：close（16×16） */
+  close: {
+    paths: [
+      {
+        d: 'M8 8.707l3.646 3.647.708-.707L8.707 8l3.647-3.646-.707-.708L8 7.293 4.354 3.646l-.707.708L7.293 8l-3.646 3.646.707.708L8 8.707z'
+      }
+    ]
   }
 } satisfies Record<string, IconSpec>;
 
@@ -45,7 +53,7 @@ const FALLBACK_ICON: CodiconName = 'chat';
 /**
  * @brief 渲染一个 codicon 内联 SVG
  * @param name 图标名；未知名字（如扩展侧下发了尚未收录的 key）回退到 chat
- * @details 尺寸由外层 CSS 控制（`.rail-btn svg` / `.icon-btn svg`），此处不写死宽高。
+ * @details 尺寸由外层 CSS 控制（如 `.vssm-icon-btn svg`），此处不写死宽高。
  */
 export function Codicon({ name }: { name: string }) {
   const spec: IconSpec = ICONS[name as CodiconName] ?? ICONS[FALLBACK_ICON];

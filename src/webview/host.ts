@@ -5,13 +5,15 @@
  * @details 1) 实现 WebviewViewProvider，resolveWebviewView 中注入 HTML 壳
  *          2. 开启 enableScripts，建立 localResourceRoots 白名单
  *          3. 通过 webview.postMessage / onDidReceiveMessage 做扩展 ⇄ 页面 双向通信
- *          消息协议（页面→扩展）：ready / sendMessage / requestViewList / requestSnapshot / nodeCommand / refreshView
- *          消息协议（扩展→页面）：reply / info / viewList / snapshot
+ *          消息协议（页面→扩展）：ready / sendMessage / requestViewList / requestExtensionInfo /
+ *                                requestSnapshot / nodeCommand / refreshView
+ *          消息协议（扩展→页面）：reply / info / viewList / extensionInfo / snapshot
  */
 
 import * as vscode from 'vscode';
 import { logToVssmToolChannel } from '../shared/logger';
 import type { Registration } from '../shared/registration';
+import { extractExtensionInfo, type ExtensionInfo } from './extension-info';
 import { treeViewRegistry } from './registry';
 import { getNonce, getUri } from './resources';
 
@@ -30,8 +32,12 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
   /**
    * @brief 构造函数
    * @param {vscode.Uri} _extensionUri - 扩展安装目录，用于约束 webview 可访问的资源范围
+   * @param {ExtensionInfo} _info - 扩展元信息，供页面欢迎页展示（取自 package.json）
    */
-  constructor(private readonly _extensionUri: vscode.Uri) {}
+  constructor(
+    private readonly _extensionUri: vscode.Uri,
+    private readonly _info: ExtensionInfo
+  ) {}
 
   /**
    * @brief 视图首次可见时由 VS Code 调用，在此装配 webview
@@ -100,6 +106,11 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
           }))
         ];
         this.postMessageToWebview({ type: 'viewList', views });
+        break;
+      }
+      // 页面请求扩展元信息（插件名 / 版本号 / 仓库地址），供欢迎页展示
+      case 'requestExtensionInfo': {
+        this.postMessageToWebview({ type: 'extensionInfo', ...this._info });
         break;
       }
       // 页面点击某节点触发其 command：原样回传，扩展侧 executeCommand 执行
@@ -180,7 +191,7 @@ export const chatWebviewRegistration: Registration = {
     context.subscriptions.push(
       vscode.window.registerWebviewViewProvider(
         ChatWebviewViewProvider.viewType,
-        new ChatWebviewViewProvider(context.extensionUri),
+        new ChatWebviewViewProvider(context.extensionUri, extractExtensionInfo(context.extension.packageJSON)),
         {
           // 视图隐藏时不销毁，保留输入与滚动状态（代价：常驻内存）
           webviewOptions: { retainContextWhenHidden: true }

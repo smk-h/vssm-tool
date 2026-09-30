@@ -1,0 +1,87 @@
+/**
+ * @file Tabs（通用横向标签栏）样式
+ * @see src/components/tabs.tsx
+ * @details 结构：.vssm-tabs（外框，带底边框）
+ *                ├─ .vssm-tabs-list（标签列表，可横向滚动）
+ *                └─ .vssm-tabs-trailing（右端附加操作，不参与滚动）
+ *          颜色取 VS Code 面板标题栏语义变量（panelTitle.*）：
+ *          未选中弱化、选中全亮加粗，底边压一条下划线。
+ */
+
+.vssm-tabs {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  /* 展开时轻微下落淡入（"弹出"观感） */
+  animation: vssm-tabs-in 0.12s ease-out;
+}
+
+/* 标签列表：标签多时横向滚动而不换行，滚动条隐藏 */
+.vssm-tabs-list {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 0 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.vssm-tabs-list::-webkit-scrollbar {
+  display: none;
+}
+
+/* 右端附加区（关闭按钮等）：固定在右端，不随列表滚动 */
+.vssm-tabs-trailing {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 0 6px 0 2px;
+}
+
+.vssm-tab {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 7px 10px;
+  color: var(--vscode-panelTitle-inactiveForeground, var(--vscode-descriptionForeground));
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  white-space: nowrap;
+  transition: color 0.1s ease;
+}
+.vssm-tab:hover {
+  color: var(--vscode-panelTitle-activeForeground, var(--vscode-foreground));
+}
+.vssm-tab:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -2px;
+}
+
+/* 选中态：全亮 + 加粗 + 底边下划线（画在自身盒内，正好压在容器底边框之上） */
+.vssm-tab.is-active {
+  color: var(--vscode-panelTitle-activeForeground, var(--vscode-foreground));
+  font-weight: 600;
+  box-shadow: inset 0 -1px 0 var(--vscode-panelTitle-activeBorder, var(--vscode-focusBorder));
+}
+
+@keyframes vssm-tabs-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* 尊重系统的"减少动效"设置 */
+@media (prefers-reduced-motion: reduce) {
+  .vssm-tabs {
+    animation: none;
+  }
+}

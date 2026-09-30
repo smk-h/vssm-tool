@@ -37,7 +37,7 @@ Separate Vite + React 18 workspace (an npm workspace of the root package) built 
 
 - **`src/lib/`** — `protocol.ts` (the bidirectional message contract, mirrored from `src/webview/host.ts`) and `vscode-api.ts` (the single `acquireVsCodeApi()` wrapper; falls back to `console.log` under the Vite dev server).
 - **`src/hooks/`** — `use-extension-message.ts` is the **only** `message` listener; `use-views.ts` requests `viewList` and tracks the active view.
-- **`src/components/`** — reusable primitives (`codicon.tsx` icon library, `icon-button.tsx`, `nav-rail.tsx`, `top-bar.tsx`); they carry no styles of their own.
+- **`src/components/`** — reusable primitives: `top-bar.tsx` (title + action slot), `tabs.tsx` (controlled horizontal tab bar), `welcome.tsx` (the fixed block shown while no tab is picked), `codicon.tsx` (icon library) and `icon-button.tsx`; they carry no styles of their own.
 - **`src/views/`** — one directory per view; `index.tsx` maps `viewId → component` and is the single place to register a new view.
 - **`src/style/`** — **all** CSS lives here (components carry no `.css`): `index.css` is the single entry (`@import` order = cascade order), `base.css` / `controls.css` hold the global reset, layout skeleton and base controls, and `components/` / `views/` mirror the source layers. Every class is namespaced `vssm-`, state classes use `is-`, and bare element selectors (other than the reset) are not allowed.
 

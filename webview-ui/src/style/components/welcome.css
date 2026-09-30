@@ -1,0 +1,57 @@
+/**
+ * @file Welcome（内容区默认展示）样式
+ * @see src/components/welcome.tsx
+ * @details 统一用主题语义变量，不写死颜色，明暗主题下都成立。
+ */
+
+.vssm-welcome {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  text-align: center;
+  user-select: none;
+}
+
+/* 插件名：欢迎页主标题 */
+.vssm-welcome-name {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--vscode-foreground);
+}
+
+/* 版本号 */
+.vssm-welcome-version {
+  font-size: 0.9em;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* GitHub 仓库地址：长地址折行，不撑破面板 */
+.vssm-welcome-link {
+  max-width: 100%;
+  font-size: 0.9em;
+  color: var(--vscode-textLink-foreground);
+  text-decoration: none;
+  word-break: break-all;
+  cursor: pointer;
+}
+.vssm-welcome-link:hover {
+  color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground));
+  text-decoration: underline;
+}
+.vssm-welcome-link:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+/* 功能入口提示 */
+.vssm-welcome-hint {
+  margin-top: 6px;
+  font-size: 0.9em;
+  color: var(--vscode-descriptionForeground);
+}

@@ -4,18 +4,39 @@
  * @details 与扩展侧 src/webview/host.ts 的 _handleMessage / postMessageToWebview 逐项对齐。
  *          两个方向各一个联合类型——新增消息时只在这里加一个成员，两端即刻受类型约束，
  *          不再靠 `data.type === '...'` 字符串硬比对。
- *          扩展侧已实现下列全部消息；webview 侧目前只用到 ready / sendMessage / requestViewList，
- *          其余为已对齐的契约预留（接入 provider 视图时可直接使用）。
+ *          扩展侧已实现下列全部消息；webview 侧目前用到 ready / sendMessage / requestViewList /
+ *          requestExtensionInfo，其余为已对齐的契约预留。
  */
 
 /** @brief 导航栏一个视图入口（扩展侧 viewList 的下发项） */
 export interface ViewListEntry {
   /** @brief 'chat'，或某个 provider 的 viewId */
   id: string;
-  /** @brief 展示名（导航提示与顶栏标题） */
+  /** @brief 展示名（标签文案与顶栏标题） */
   label: string;
   /** @brief 图标名，对应 components/codicon.tsx 的图标表 key */
   icon?: string;
+}
+
+/** @brief 仓库信息（与扩展侧 extension-info.ts 的 RepositoryInfo 一致） */
+export interface RepositoryInfo {
+  /** @brief 可直接打开的 https 地址 */
+  url: string;
+  /** @brief 展示名（通常是 owner/repo，只显示用户名与仓库名） */
+  label: string;
+}
+
+/**
+ * @brief 欢迎页展示的扩展元信息
+ * @details 字段与扩展侧 src/webview/extension-info.ts 的 ExtensionInfo 保持一致。
+ */
+export interface ExtensionInfo {
+  /** @brief 插件展示名 */
+  name: string;
+  /** @brief 版本号（不含 v 前缀） */
+  version: string;
+  /** @brief 仓库信息；package.json 未声明 repository 时为 undefined */
+  repository?: RepositoryInfo;
 }
 
 /**
@@ -40,6 +61,7 @@ export type WebviewMessage =
   | { type: 'ready' }
   | { type: 'sendMessage'; value: string }
   | { type: 'requestViewList' }
+  | { type: 'requestExtensionInfo' }
   | { type: 'requestSnapshot'; viewId: string }
   | { type: 'nodeCommand'; command: string; args?: unknown[] }
   | { type: 'refreshView'; viewId: string };
@@ -49,4 +71,5 @@ export type ExtensionMessage =
   | { type: 'info'; value: string }
   | { type: 'reply'; value: string }
   | { type: 'viewList'; views: ViewListEntry[] }
+  | ({ type: 'extensionInfo' } & ExtensionInfo)
   | { type: 'snapshot'; viewId: string; tree: SnapNode[] };

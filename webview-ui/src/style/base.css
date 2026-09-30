@@ -24,17 +24,12 @@ body {
   background: var(--vscode-sideBar-background);
 }
 
-/* ── 布局骨架：左侧导航 + 右侧主区 ─────────────────────────── */
+/* ── 布局骨架：标题栏 + 标签行 + 内容区（纵向三段） ─────────── */
 .vssm-app {
   display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100vh;
-}
-.vssm-main {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
 }
 .vssm-content {
   flex: 1;

@@ -3,7 +3,7 @@ import { Codicon } from '@/components/codicon';
 /**
  * @brief 通用图标按钮（顶栏 / 导航栏 / 后续工具栏统一复用它）
  * @details 要加一个按钮：<IconButton icon="gear" label="设置" onClick={...} />，
- *          图标名见 components/codicon.tsx，样式见同目录 icon-button.css。
+ *          图标名见 components/codicon.tsx，样式见 src/style/components/icon-button.css。
  */
 interface IconButtonProps {
   /** @brief 图标名（codicon.tsx 图标表的 key） */
