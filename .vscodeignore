@@ -20,8 +20,7 @@ docs
 .cnb.yml
 CLAUDE.md
 
-# 测试夹具与测试产物不进安装包（out/test 已单独排除）
-test-fixtures/**
+# 测试产物：src/test/** 已由上面的 src/** 排除，out/test/** 已单独排除，无需额外规则
 
 # webview-ui 子工程：只发布构建产物 dist/，排除源码与依赖
 webview-ui/src/**

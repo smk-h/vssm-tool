@@ -15,7 +15,7 @@ import { initProjectInteractive } from '../commands/init-project';
  */
 
 /** @brief 夹具工作区（.vscode-test.mjs workspaceFolder 打开的目录） */
-const FIXTURE_ROOT = path.join(__dirname, '..', '..', 'test-fixtures', 'demo-workspace');
+const FIXTURE_ROOT = path.join(__dirname, '..', '..', 'src', 'test', 'fixtures', 'demo-workspace');
 /** @brief 运行时资源根目录（编译输出 out/） */
 const RESOURCE_ROOT = path.join(__dirname, '..');
 /** @brief 仓库源码 src 目录 */
