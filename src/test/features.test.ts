@@ -3,6 +3,8 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
 import { withFileRetry } from '../helpers/utils';
+import { showNpmTasks } from '../cmd/npm-run-task';
+import { initProjectInteractive } from '../cmd/init-project';
 
 /**
  * @file 命令级集成测试：在真实 Extension Host 中执行命令，
@@ -75,6 +77,16 @@ suite('addToIgnore 命令', () => {
     await vscode.commands.executeCommand('vssm-tool.addToVScodeIgnore', target);
     assert.ok(readFixture('.vscodeignore').includes('sample.txt'));
   });
+
+  test('保留已有内容，新条目追加在其后', async () => {
+    fs.writeFileSync(path.join(FIXTURE_ROOT, '.gitignore'), 'existing.txt\n');
+
+    await vscode.commands.executeCommand('vssm-tool.addToGitIgnore', target);
+
+    const content = readFixture('.gitignore');
+    assert.ok(content.startsWith('existing.txt\n'), '已有内容应原样保留');
+    assert.ok(content.includes('sample.txt'), '新条目应被追加');
+  });
 });
 
 suite('generateConfigs 命令', () => {
@@ -100,6 +112,86 @@ suite('generateConfigs 命令', () => {
   test('按文件夹名生成 <name>.code-workspace', async () => {
     await vscode.commands.executeCommand('vssm-tool.generateWorkspaceConfig', vscode.Uri.file(FIXTURE_ROOT));
     assert.ok(readFixture('demo-workspace.code-workspace').length > 0);
+  });
+
+  test('目标文件已存在时不覆盖（幂等保护）', async () => {
+    fs.writeFileSync(path.join(FIXTURE_ROOT, '.clang-format'), 'USER CONTENT');
+
+    await vscode.commands.executeCommand('vssm-tool.generateClangFormat', vscode.Uri.file(FIXTURE_ROOT));
+
+    assert.strictEqual(readFixture('.clang-format'), 'USER CONTENT', '已存在的文件不应被覆盖');
+  });
+
+  test('generateAuto 开启时按编辑器设置自动生成 .editorconfig', async function () {
+    this.timeout(20000);
+    // 前序用例已生成过 .editorconfig，这里先清理以便走"新建"分支
+    cleanFixture('.editorconfig');
+    const original = vscode.workspace.getConfiguration('generateEditorConfig').get<boolean>('generateAuto');
+
+    try {
+      await vscode.workspace
+        .getConfiguration('generateEditorConfig')
+        .update('generateAuto', true, vscode.ConfigurationTarget.Workspace);
+
+      await vscode.commands.executeCommand('vssm-tool.generateEditorConfig', vscode.Uri.file(FIXTURE_ROOT));
+
+      const content = readFixture('.editorconfig');
+      assert.match(content, /root = true/, '应包含 EditorConfig 根标记');
+      assert.match(content, /indent_style = /, '应写入缩进风格');
+      assert.match(content, /indent_size = /, '应写入缩进大小');
+      assert.match(content, /\[\*\]/, '应写入通用匹配段');
+    } finally {
+      // 恢复原值（原值为 undefined 时相当于移除该设置）
+      await vscode.workspace
+        .getConfiguration('generateEditorConfig')
+        .update('generateAuto', original, vscode.ConfigurationTarget.Workspace);
+    }
+  });
+});
+
+suite('runNpmTask 命令', () => {
+  /** @brief 夹具工作区根下的 package.json（命令从工作区根读取脚本清单） */
+  const pkgPath = path.join(FIXTURE_ROOT, 'package.json');
+
+  setup(() => {
+    // 其他用例会改写夹具，这里固定写入本套件所需脚本，保证可重复
+    fs.writeFileSync(pkgPath, JSON.stringify({ name: 'fixture', scripts: { build: 'tsc', 'test:unit': 'mocha' } }));
+  });
+
+  /** @brief 构造记录型任务执行器替身（避免真的启动 npm 进程） */
+  function makeExecutor(sink: vscode.Task[]): (task: vscode.Task) => Promise<vscode.TaskExecution> {
+    return async (task: vscode.Task) => {
+      sink.push(task);
+      return {} as unknown as vscode.TaskExecution;
+    };
+  }
+
+  test('从 package.json 列出脚本，选中后交给任务执行器运行', async () => {
+    const executed: vscode.Task[] = [];
+    let offeredTitle = '';
+    let offeredLabels: string[] = [];
+
+    const select = async (items: vscode.QuickPickItem[], title: string) => {
+      offeredTitle = title;
+      offeredLabels = items.map((i) => i.label);
+      return items.find((i) => i.label === 'build');
+    };
+
+    await showNpmTasks(select, makeExecutor(executed));
+
+    assert.strictEqual(offeredTitle, 'Select npm script to run');
+    assert.deepStrictEqual(offeredLabels, ['build', 'test:unit']);
+    assert.strictEqual(executed.length, 1, '应恰好执行一个任务');
+    assert.strictEqual(executed[0].name, 'build');
+    assert.strictEqual((executed[0].definition as { script?: string }).script, 'build');
+  });
+
+  test('用户取消选择时不执行任何任务', async () => {
+    const executed: vscode.Task[] = [];
+
+    await showNpmTasks(async () => undefined, makeExecutor(executed));
+
+    assert.strictEqual(executed.length, 0, '取消选择后不应执行任务');
   });
 });
 
@@ -257,5 +349,31 @@ suite('initProject 命令（npm-package）', () => {
     // 其他模板文件正常创建
     assert.ok(fs.existsSync(path.join(FIXTURE_ROOT, 'src', 'index.ts')));
     assert.strictEqual(JSON.parse(readFixture('tsconfig.json')).compilerOptions.outDir, 'out');
+  });
+});
+
+suite('initProject 命令（主命令）', () => {
+  setup(() => {
+    ensureRuntimeResources();
+    // 用 CNB 模板作为分派目标，先清掉其产物保证从干净状态开始
+    cleanFixture('.cnb.yml', 'LICENSE', '.cnb');
+  });
+
+  test('候选项覆盖全部项目类型，选中 CNB 后执行对应模板初始化', async () => {
+    let offered: string[] = [];
+
+    await initProjectInteractive(RESOURCE_ROOT, async (items) => {
+      offered = items.map((i) => i.value);
+      return items.find((i) => i.value === 'cnb');
+    });
+
+    assert.deepStrictEqual(offered, ['c-vscode', 'cnb', 'npm-package'], '候选项应覆盖全部模板类型');
+    assert.ok(fs.existsSync(path.join(FIXTURE_ROOT, '.cnb.yml')), '应初始化所选 CNB 模板');
+  });
+
+  test('用户取消选择时不初始化任何模板', async () => {
+    await initProjectInteractive(RESOURCE_ROOT, async () => undefined);
+
+    assert.ok(!fs.existsSync(path.join(FIXTURE_ROOT, '.cnb.yml')), '取消后不应产生模板产物');
   });
 });
