@@ -220,7 +220,7 @@
     "watch": "tsc -watch -p ./",
     "postbuild": "shx mkdir -p out && shx rm -rf out/template && shx cp -rf src/template out/template",
     "clean": "shx rm -rf out",
-    "dev:host": "npm run build:webview && npm run compile && npm run postbuild && code --extensionDevelopmentPath=. --new-window",
+    "dev:host": "npm run build:webview && npm run compile && npm run postbuild && node scripts/launch-dev-host.mjs",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
     "test": "vscode-test",
