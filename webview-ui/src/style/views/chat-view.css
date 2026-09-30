@@ -1,0 +1,31 @@
+/**
+ * @file ChatView（聊天视图）样式
+ * @see src/views/chat/chat-view.tsx
+ */
+
+.vssm-chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 10px;
+}
+.vssm-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--vscode-panel-border);
+  padding: 6px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+.vssm-chat-msg {
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--vscode-editorWidget-border);
+}
+.vssm-chat-msg:last-child {
+  border-bottom: none;
+}
+.vssm-chat-composer {
+  display: flex;
+  gap: 6px;
+}

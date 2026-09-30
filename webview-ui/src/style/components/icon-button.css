@@ -1,0 +1,31 @@
+/**
+ * @file IconButton（通用图标按钮）样式
+ * @see src/components/icon-button.tsx
+ */
+
+.vssm-icon-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+}
+.vssm-icon-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+.vssm-icon-btn.is-active {
+  background: var(--vscode-toolbar-activeBackground);
+}
+.vssm-icon-btn:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -2px;
+}
+.vssm-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}

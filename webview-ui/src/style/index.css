@@ -1,0 +1,24 @@
+/**
+ * @file 样式总入口（main.tsx 只引入这一个文件）
+ * @module style
+ * @details 所有样式集中在本目录，组件目录下不再放 .css。
+ *          @import 的顺序即层叠顺序——先基础、后控件、再组件、最后视图，
+ *          新增样式文件时在下方按层追加一行即可。
+ *
+ * 【命名空间约定】——防止样式互相污染
+ *   1. 所有类名以 `vssm-` 前缀（与扩展 id `vssm-tool` 同源）
+ *   2. 组件内的位置用 `-` 连接：`.vssm-rail-btn`、`.vssm-chat-msg`
+ *   3. 状态类用 `is-` 前缀并挂在同一元素上：`.vssm-rail-btn.is-active`
+ *   4. 布局开关态由父级承载：`.vssm-app.is-rail-open .vssm-rail`
+ *   5. 不使用裸元素选择器（`input {}` / `button {}`）——只允许 `html` / `body` / `*` 这类
+ *      必要的全局 reset，其余一律走类名
+ *
+ * 注：本文件只放 @import，不放具体规则（CSS 规范要求 @import 先于其它规则）。
+ */
+
+@import './base.css';
+@import './controls.css';
+@import './components/icon-button.css';
+@import './components/nav-rail.css';
+@import './components/top-bar.css';
+@import './views/chat-view.css';

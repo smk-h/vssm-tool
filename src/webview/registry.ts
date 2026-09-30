@@ -31,15 +31,19 @@ export interface SnapNode {
  * @details 每个 provider 提供只读快照，chat webview 按需取 getSnapshot() 渲染。
  */
 export interface SnapshottableProvider {
-  /** @brief 对应 package.json 里 view 的 id */
+  /** @brief 对应 package.json 里 view 的 id，也是 webview 侧 views/index.tsx 的登记键 */
   readonly viewId: string;
+  /** @brief 导航栏展示名；缺省用 viewId */
+  readonly label?: string;
+  /** @brief 导航栏图标名（webview-ui 的 codicon 图标表 key）；缺省回退 chat */
+  readonly icon?: string;
   /** @brief 返回完整树快照（深拷贝过的纯数据，可直接 postMessage） */
   getSnapshot(): SnapNode[];
   /**
-   * @brief 刷新数据源（清缓存/重扫），供 webview 刷新按钮调用
+   * @brief 刷新数据源（清缓存/重扫）
    * @details 有外部数据源且在构造时缓存的 provider 实现；
    *          每次快照都重新计算的 provider 可不实现——webview 重新拉快照即刷新。
-   *          chat provider 用可选链 `provider.refresh?.()` 调用，缺省时退化为直接重新快照。
+   *          host 用可选链 `provider.refresh?.()` 调用，缺省时退化为直接重新快照。
    */
   refresh?(): void;
 }

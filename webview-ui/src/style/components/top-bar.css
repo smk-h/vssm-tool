@@ -1,0 +1,21 @@
+/**
+ * @file TopBar（顶栏）样式
+ * @see src/components/top-bar.tsx
+ */
+
+.vssm-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.vssm-topbar-title {
+  font-weight: 600;
+  opacity: 0.9;
+}
+.vssm-topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}

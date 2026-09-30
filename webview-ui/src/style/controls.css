@@ -1,0 +1,34 @@
+/**
+ * @file 基础控件样式：新按钮 / 新输入框直接复用这两个类
+ * @details 组件按需在其上叠加自己的类（如 `.vssm-topbar .vssm-btn`）做局部微调，
+ *          不要把基础控件规则写进各组件文件。
+ */
+
+.vssm-btn {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  padding: 4px 12px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+.vssm-btn:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.vssm-text-input {
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  padding: 4px 6px;
+  border-radius: 2px;
+  outline: none;
+  font-family: inherit;
+  font-size: inherit;
+  min-width: 0;
+}
+.vssm-text-input:focus {
+  border-color: var(--vscode-focusBorder);
+}

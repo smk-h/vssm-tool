@@ -222,7 +222,7 @@
     "clean": "shx rm -rf out",
     "dev:host": "npm run build:webview && npm run compile && npm run postbuild && node scripts/launch-dev-host.mjs",
     "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src",
+    "lint": "eslint src webview-ui/src",
     "test": "vscode-test",
     "vsix:build": "vsce package",
     "vsix:clean": "shx rm -rf *.vsix",

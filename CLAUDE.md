@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run compile        # tsc compilation
 npm run watch          # tsc watch mode (dev)
 npm run postbuild      # copy src/template/ into out/template (required after compile)
-npm run lint           # eslint src
+npm run lint           # eslint src webview-ui/src
 npm run format:check   # prettier check
 npm run format:fix     # prettier fix
 npm test               # compile + lint, then run tests via vscode-test (Extension Host)
@@ -30,6 +30,18 @@ npm run vsix:build     # package .vsix with vsce
 - **`src/webview/`** — The chat webview host: `host.ts` is the `WebviewViewProvider` serving the React UI built by `webview-ui/`; `resources.ts` holds `getUri`/`getNonce`; `registry.ts` keeps the `SnapshottableProvider` contract and `treeViewRegistry` as a (currently unused) extension point.
 - **`src/shared/`** — Cross-cutting utilities: `logger.ts` (the "VSSM-Tool" output channel, prefixing caller file:line from stack traces) and `fs.ts` (`withFileRetry`).
 - **`src/template/`** — Static scaffolding templates (`c-vscode/`, `cnb/`, `npm-package/`) copied into user workspaces by `initProject.ts`; shared default configs live in `default/DefaultTemplate.*`.
+
+### Webview UI (`webview-ui/`)
+
+Separate Vite + React 18 workspace (an npm workspace of the root package) built to `webview-ui/dist/assets/` with **fixed filenames** (`index.js` / `index.css`, no hash) so the host can reference them by path via `asWebviewUri`. Its layering mirrors the extension side:
+
+- **`src/lib/`** — `protocol.ts` (the bidirectional message contract, mirrored from `src/webview/host.ts`) and `vscode-api.ts` (the single `acquireVsCodeApi()` wrapper; falls back to `console.log` under the Vite dev server).
+- **`src/hooks/`** — `use-extension-message.ts` is the **only** `message` listener; `use-views.ts` requests `viewList` and tracks the active view.
+- **`src/components/`** — reusable primitives (`codicon.tsx` icon library, `icon-button.tsx`, `nav-rail.tsx`, `top-bar.tsx`); they carry no styles of their own.
+- **`src/views/`** — one directory per view; `index.tsx` maps `viewId → component` and is the single place to register a new view.
+- **`src/style/`** — **all** CSS lives here (components carry no `.css`): `index.css` is the single entry (`@import` order = cascade order), `base.css` / `controls.css` hold the global reset, layout skeleton and base controls, and `components/` / `views/` mirror the source layers. Every class is namespaced `vssm-`, state classes use `is-`, and bare element selectors (other than the reset) are not allowed.
+
+Import alias `@/` → `webview-ui/src`, kept in sync between `vite.config.ts` and `tsconfig.json`.
 
 ### Build-time Template Copy
 

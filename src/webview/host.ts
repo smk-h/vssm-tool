@@ -95,8 +95,8 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
           { id: 'chat', label: 'Chat', icon: 'chat' },
           ...Array.from(treeViewRegistry.values()).map((p) => ({
             id: p.viewId,
-            label: p.viewId,
-            icon: 'tree'
+            label: p.label ?? p.viewId,
+            icon: p.icon
           }))
         ];
         this.postMessageToWebview({ type: 'viewList', views });
