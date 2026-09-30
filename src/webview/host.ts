@@ -6,10 +6,12 @@
  *          2. 开启 enableScripts，建立 localResourceRoots 白名单
  *          3. 通过 webview.postMessage / onDidReceiveMessage 做扩展 ⇄ 页面 双向通信
  *          消息协议（页面→扩展）：ready / sendMessage / requestViewList / requestExtensionInfo /
- *                                requestFileIcons / requestSnapshot / nodeCommand / refreshView
+ *                                requestFileIcons / requestSnapshot / nodeCommand /
+ *                                nodeContextMenu / refreshView
  *          消息协议（扩展→页面）：reply / info / viewList / extensionInfo / fileIcons / snapshot
  */
 
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { logToVssmToolChannel } from '../shared/logger';
 import type { Registration } from '../shared/registration';
@@ -134,6 +136,25 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
         }
         break;
       }
+      // 树节点右键菜单：在资源管理器中显示 / 重命名。
+      // 路径由 provider 从节点 id 还原（含越界校验），webview 侧不接触文件系统布局
+      case 'nodeContextMenu': {
+        const provider = treeViewRegistry.get(String(data?.viewId ?? ''));
+        const fsPath = provider?.resolvePath?.(String(data?.nodeId ?? ''));
+        if (!fsPath) {
+          break;
+        }
+        const nodeUri = vscode.Uri.file(fsPath);
+        if (data?.action === 'reveal') {
+          // 模板在扩展安装目录下、不属于任何工作区，VS Code 的资源管理器（revealInExplorer）
+          // 只显示工作区内的文件，对外部文件会静默无效——这里用系统文件资源管理器并选中它。
+          // 注意 id 是大写 OS（小写 Os 会 not found，命令 id 区分大小写）
+          this._executeOrWarn('revealFileInOS', nodeUri);
+        } else if (data?.action === 'rename' && typeof data?.name === 'string') {
+          void this._renameNode(String(data?.viewId ?? ''), nodeUri, data.name);
+        }
+        break;
+      }
       // 页面请求某视图的树快照
       case 'requestSnapshot': {
         const viewId = String(data?.viewId ?? '');
@@ -156,6 +177,51 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
       }
       default:
         break;
+    }
+  }
+
+  /**
+   * @brief 执行命令，失败时弹错误提示
+   * @details 右键动作失败若静默（裸 void），表现就是"点了没反应"，最难排查——必须显式暴露
+   */
+  private _executeOrWarn(command: string, ...args: unknown[]): void {
+    vscode.commands.executeCommand(command, ...args).then(undefined, (err: unknown) => {
+      vscode.window.showErrorMessage(`执行 ${command} 失败：${err instanceof Error ? err.message : String(err)}`);
+    });
+  }
+
+  /**
+   * @brief 重命名模板文件/目录：workspace.fs.rename → 推送新快照
+   * @param {string} viewId - 节点所属视图，重命名成功后刷新它
+   * @param {vscode.Uri} uri - 被重命名的文件/目录
+   * @param {string} rawName - 新名称，来自 webview 行内编辑器（Enter / 失焦提交）
+   * @details 不用 VS Code 内置的 renameFile 命令——那依赖资源管理器当前选中项；
+   *          名称已在 webview 行内就地编辑好，这里只负责校验、落盘与刷新树。
+   */
+  private async _renameNode(viewId: string, uri: vscode.Uri, rawName: string): Promise<void> {
+    const name = rawName.trim();
+    // webview 已校验，这里兜底；非法名称直接忽略
+    if (!name || name.includes('/') || name.includes('\\')) {
+      return;
+    }
+    // 未实际改动（如失焦提交）时不落盘、不刷新
+    if (name === path.basename(uri.fsPath)) {
+      return;
+    }
+
+    const target = vscode.Uri.file(path.join(path.dirname(uri.fsPath), name));
+    try {
+      // overwrite:false——目标已存在时直接报错，避免静默覆盖
+      await vscode.workspace.fs.rename(uri, target, { overwrite: false });
+    } catch (err) {
+      vscode.window.showErrorMessage(`重命名失败：${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+
+    // 磁盘结构已变：重新快照并推送，树立即反映重命名结果
+    const provider = treeViewRegistry.get(viewId);
+    if (provider) {
+      this.postMessageToWebview({ type: 'snapshot', viewId, tree: provider.getSnapshot() });
     }
   }
 

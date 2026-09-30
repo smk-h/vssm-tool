@@ -63,6 +63,9 @@ export interface SnapNode {
   command?: { command: string; args?: unknown[] };
 }
 
+/** @brief 树节点右键菜单的动作（扩展侧 nodeContextMenu 处理） */
+export type NodeContextAction = 'reveal' | 'rename';
+
 /** @brief 页面 → 扩展 */
 export type WebviewMessage =
   | { type: 'ready' }
@@ -72,6 +75,14 @@ export type WebviewMessage =
   | { type: 'requestFileIcons' }
   | { type: 'requestSnapshot'; viewId: string }
   | { type: 'nodeCommand'; command: string; args?: unknown[] }
+  | {
+      type: 'nodeContextMenu';
+      viewId: string;
+      nodeId: string;
+      action: NodeContextAction;
+      /** @brief rename 必填：行内编辑器提交的新名称（reveal 时省略） */
+      name?: string;
+    }
   | { type: 'refreshView'; viewId: string };
 
 /** @brief 扩展 → 页面 */

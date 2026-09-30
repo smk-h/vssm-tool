@@ -25,7 +25,7 @@ export function TemplatesView() {
   }
   return (
     <div className="vssm-templates">
-      <TreeView nodes={tree} />
+      <TreeView nodes={tree} viewId={VIEW_ID} />
     </div>
   );
 }

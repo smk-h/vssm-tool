@@ -46,6 +46,13 @@ export interface SnapshottableProvider {
    *          host 用可选链 `provider.refresh?.()` 调用，缺省时退化为直接重新快照。
    */
   refresh?(): void;
+  /**
+   * @brief 把节点 id（相对路径）解析回文件系统绝对路径
+   * @details 树的右键动作（在资源管理器中显示 / 重命名）经由它把 webview 回传的
+   *          节点 id 还原成真实路径；实现方应自行校验 id 合法性（如防目录穿越）。
+   *          不支持右键动作的 provider 可不实现。
+   */
+  resolvePath?(nodeId: string): string | undefined;
 }
 
 /**

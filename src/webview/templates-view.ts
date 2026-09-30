@@ -52,6 +52,29 @@ export class TemplatesProvider implements SnapshottableProvider {
   public getSnapshot(): SnapNode[] {
     return readDirectory(this._templateRoot, '');
   }
+
+  /**
+   * @brief 把节点 id（相对模板根的路径）解析回文件系统绝对路径
+   * @returns 模板根下的绝对路径；id 非法或越出模板根时 undefined
+   * @details 树的右键动作（在资源管理器中显示 / 重命名）经由它还原真实路径。
+   *          逐段校验 + resolve 后前缀校验双保险，挡住 `..` 目录穿越。
+   */
+  public resolvePath(nodeId: string): string | undefined {
+    // 反斜杠在 Windows 上是分隔符：无条件拒绝，避免穿越校验被平台差异绕过
+    if (nodeId.includes('\\')) {
+      return undefined;
+    }
+    const segments = nodeId.split('/');
+    if (segments.some((segment) => !segment || segment === '.' || segment === '..')) {
+      return undefined;
+    }
+
+    const resolved = path.resolve(this._templateRoot, ...segments);
+    if (!resolved.startsWith(this._templateRoot + path.sep)) {
+      return undefined;
+    }
+    return resolved;
+  }
 }
 
 /**

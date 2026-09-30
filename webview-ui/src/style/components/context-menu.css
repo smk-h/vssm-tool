@@ -1,0 +1,37 @@
+/**
+ * @file ContextMenu（右键菜单）样式
+ * @see src/components/context-menu.tsx
+ * @details 走 VS Code 菜单语义变量（menu.*），亮暗色主题自动适配。
+ */
+
+.vssm-ctx-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 180px;
+  padding: 4px;
+  background: var(--vscode-menu-background, var(--vscode-editorWidget-background));
+  color: var(--vscode-menu-foreground, var(--vscode-editorWidget-foreground));
+  border: 1px solid var(--vscode-menu-border, var(--vscode-editorWidget-border));
+  border-radius: 4px;
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.3));
+}
+
+.vssm-ctx-menu-item {
+  display: block;
+  width: 100%;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vssm-ctx-menu-item:hover,
+.vssm-ctx-menu-item:focus-visible {
+  background: var(--vscode-menu-selectionBackground, var(--vscode-list-hoverBackground));
+  color: var(--vscode-menu-selectionForeground, var(--vscode-list-hoverForeground));
+  outline: none;
+}

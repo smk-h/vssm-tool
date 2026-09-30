@@ -17,6 +17,7 @@
 
 @import './base.css';
 @import './controls.css';
+@import './components/context-menu.css';
 @import './components/file-icon.css';
 @import './components/icon-button.css';
 @import './components/tabs.css';

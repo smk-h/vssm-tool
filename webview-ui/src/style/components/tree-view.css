@@ -59,6 +59,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 行内重命名输入框：就地替换节点标签（资源管理器同款交互） */
+.vssm-tree-rename {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 4px;
+  border: 1px solid var(--vscode-focusBorder, var(--vscode-inputValidation-infoBorder));
+  border-radius: 2px;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  font: inherit;
+  outline: none;
+}
 .vssm-tree-desc {
   margin-left: 6px;
   font-size: 0.9em;

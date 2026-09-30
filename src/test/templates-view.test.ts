@@ -85,6 +85,22 @@ suite('TemplatesProvider（模板目录扫描）', () => {
     assert.deepStrictEqual(new TemplatesProvider(emptyRoot).getSnapshot(), []);
   });
 
+  test('resolvePath 把节点 id 解析回模板根下的绝对路径', () => {
+    const root = makeTempResourceRoot();
+    const resolved = new TemplatesProvider(root).resolvePath('default/DefaultTemplate.README.md');
+
+    assert.ok(resolved, '合法相对路径应能解析');
+    assert.strictEqual(resolved, path.join(root, 'template', 'default', 'DefaultTemplate.README.md'));
+  });
+
+  test('resolvePath 拒绝目录穿越与不合法的节点 id', () => {
+    const provider = new TemplatesProvider(makeTempResourceRoot());
+
+    for (const bad of ['', '../outside', 'a/../..', 'a/./b', 'a//b', '.', 'a\\..\\..\\escape']) {
+      assert.strictEqual(provider.resolvePath(bad), undefined, `应拒绝: "${bad}"`);
+    }
+  });
+
   test('真实运行时资源根（扩展目录下的 out/）能扫出全部内置模板', () => {
     const extensionRoot = vscode.extensions.getExtension(EXTENSION_ID)?.extensionPath;
     if (!extensionRoot) {
