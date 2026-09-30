@@ -6,16 +6,36 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			// F5 默认配置：使用独立的干净 profile，永久与日常扩展隔离。
+			// 好处：宿主里已安装的同 ID 市场版 vssm-tool 不会进来，
+			//       其它日常扩展也不会干扰，调试环境完全可复现。
 			"name": "Run Extension",
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}"
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--user-data-dir=${workspaceFolder}/.vscode/dev-user-data",
+				"--extensions-dir=${workspaceFolder}/.vscode/dev-extensions"
 			],
-			"outFiles": [
-				"${workspaceFolder}/out/**/*.js"
-			],
-			"preLaunchTask": "${defaultBuildTask}"
+			"outFiles": ["${workspaceFolder}/out/**/*.js"],
+			// 显式指定预启动任务（非后台的 build:webview -> compile -> postbuild），
+			// 不再依赖"默认构建任务"的隐式解析，也不会被 tsc --watch 卡住
+			"preLaunchTask": "build-all",
+			"sourceMaps": true,
+			// 只解析本工程的 sourcemap，避免断点错位到 node_modules 或其它扩展里
+			"resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"]
+		},
+		{
+			// 备用配置：使用你自己的 VS Code profile（带上日常安装的全部扩展）。
+			// 只在需要验证"与其它扩展共存/冲突"这类行为时才用。
+			"name": "Run Extension (Daily Profile)",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+			"outFiles": ["${workspaceFolder}/out/**/*.js"],
+			"preLaunchTask": "build-all",
+			"sourceMaps": true,
+			"resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"]
 		}
 	]
 }

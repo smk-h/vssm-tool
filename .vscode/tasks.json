@@ -1,59 +1,68 @@
 // See https://go.microsoft.com/fwlink/?LinkId=733558
 // for the documentation about the tasks.json format
+//
+// 设计要点：
+// 1. F5 的预启动任务必须是"会正常退出"的前台任务，否则扩展宿主会被拖延甚至超时；
+//    因此把 tsc --watch 从预启动链路里摘出来，单独作为手动任务。
+// 2. src/template -> out/template 的拷贝（postbuild）是普通任务，
+//    不能套用 $tsc-watch 这类带 background 段的匹配器。
 {
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "npmRunWatch",
+      // 构建 webview-ui 产物（一次性，正常退出）
+      "label": "build:webview",
+      "type": "npm",
+      "script": "build:webview",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "clear": true
+      }
+    },
+    {
+      // 编译扩展源码（一次性，正常退出）；$tsc 是前台匹配器，把 TS 错误送进问题面板
+      "label": "compile",
+      "type": "npm",
+      "script": "compile",
+      "problemMatcher": "$tsc",
+      "presentation": {
+        "reveal": "silent",
+        "clear": true
+      }
+    },
+    {
+      // 把 src/template 树拷进 out/template（一次性，正常退出）
+      "label": "postbuild",
+      "type": "npm",
+      "script": "postbuild",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent"
+      }
+    },
+    {
+      // F5 的预启动任务：三步顺序执行且全部结束，扩展宿主才开始启动
+      "label": "build-all",
+      "dependsOrder": "sequence",
+      "dependsOn": ["build:webview", "compile", "postbuild"],
+      "presentation": {
+        "reveal": "silent"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      // 手动使用（终端 > 运行任务）：tsc 监听编译，永不退出，故必须是后台任务
+      "label": "watch",
       "type": "npm",
       "script": "watch",
       "problemMatcher": "$tsc-watch",
       "isBackground": true,
       "presentation": {
         "reveal": "never"
-      },
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      }
-    },
-    {
-      "label": "npmRunPostbuild",
-      "type": "npm",
-      "script": "postbuild",
-      "problemMatcher": "$tsc-watch",
-      "presentation": {
-        "reveal": "never"
-      },
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      }
-    },
-    {
-      "label": "npmRunBuildWebview",
-      "type": "npm",
-      "script": "build:webview",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "silent"
-      },
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      }
-    },
-    {
-      "label": "run-build",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "npmRunBuildWebview",
-        "npmRunWatch",
-        "npmRunPostbuild"
-      ],
-      "group": {
-        "kind": "build",
-        "isDefault": true
       }
     }
   ]

@@ -19,3 +19,7 @@ webview-ui/vite.config.js.map
 # 测试夹具仅入库静态种子文件，运行期产物不入库
 test-fixtures/demo-workspace/*
 !test-fixtures/demo-workspace/sample.txt
+
+# F5 "Run Extension (Clean Profile)" 使用的独立 profile（与日常扩展隔离）
+.vscode/dev-user-data/
+.vscode/dev-extensions/
