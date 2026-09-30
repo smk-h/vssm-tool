@@ -196,7 +196,7 @@
       "activitybar": [
         {
           "id": "VSSM-TOOL",
-          "title": "VSSM-TOOL Config",
+          "title": "VSSM",
           "icon": "resources/icon/dark/user-settings.svg"
         }
       ]
