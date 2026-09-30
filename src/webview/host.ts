@@ -6,14 +6,15 @@
  *          2. 开启 enableScripts，建立 localResourceRoots 白名单
  *          3. 通过 webview.postMessage / onDidReceiveMessage 做扩展 ⇄ 页面 双向通信
  *          消息协议（页面→扩展）：ready / sendMessage / requestViewList / requestExtensionInfo /
- *                                requestSnapshot / nodeCommand / refreshView
- *          消息协议（扩展→页面）：reply / info / viewList / extensionInfo / snapshot
+ *                                requestFileIcons / requestSnapshot / nodeCommand / refreshView
+ *          消息协议（扩展→页面）：reply / info / viewList / extensionInfo / fileIcons / snapshot
  */
 
 import * as vscode from 'vscode';
 import { logToVssmToolChannel } from '../shared/logger';
 import type { Registration } from '../shared/registration';
 import { extractExtensionInfo, type ExtensionInfo } from './extension-info';
+import { buildFileIconUris } from './file-icons';
 import { treeViewRegistry } from './registry';
 import { getNonce, getUri } from './resources';
 
@@ -54,11 +55,11 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._extensionUri]
     };
 
-    // 注入加载构建产物的 HTML 壳
-    webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-
     // 接收来自页面的消息
     webviewView.webview.onDidReceiveMessage((data) => this._handleMessage(data), undefined, undefined);
+
+    // 注入加载构建产物的 HTML 壳
+    webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
     logToVssmToolChannel('ChatWebviewViewProvider resolved');
   }
@@ -68,7 +69,7 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
    * @param {Record<string, unknown>} message - 任意可序列化消息
    */
   public postMessageToWebview(message: Record<string, unknown>): void {
-    this._view?.webview.postMessage(message);
+    void this._view?.webview.postMessage(message);
   }
 
   /**
@@ -113,11 +114,23 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
         this.postMessageToWebview({ type: 'extensionInfo', ...this._info });
         break;
       }
+      // 页面请求打包内置的文件图标集（key → webview 地址）
+      case 'requestFileIcons': {
+        const icons = this._view ? buildFileIconUris(this._view.webview, this._extensionUri) : {};
+        this.postMessageToWebview({ type: 'fileIcons', icons });
+        break;
+      }
       // 页面点击某节点触发其 command：原样回传，扩展侧 executeCommand 执行
       case 'nodeCommand': {
         const cmd = data?.command;
         if (typeof cmd === 'string') {
-          vscode.commands.executeCommand(cmd, ...(Array.isArray(data?.args) ? data.args : []));
+          const rawArgs: unknown[] = Array.isArray(data?.args) ? data.args : [];
+          // 字符串形式的 URI 还原为 Uri 再传：vscode.open 之类的命令只认 Uri，不认裸字符串。
+          // provider 侧刻意只下发 uri.toString()，因为它要跨 postMessage，Uri 对象会退化
+          const args = rawArgs.map((arg) =>
+            typeof arg === 'string' && /^[a-z][a-z0-9+.-]*:\/\//i.test(arg) ? vscode.Uri.parse(arg) : arg
+          );
+          vscode.commands.executeCommand(cmd, ...args);
         }
         break;
       }
@@ -151,7 +164,8 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
    * @param {vscode.Webview} webview - webview 实例，用于拼接 CSP 与资源 URI
    * @returns {string} 完整 HTML 文档
    * @details CSP：style-src 放行 webview 源（加载 index.css）；script-src 用一次性 nonce +
-   *          'strict-dynamic'（入口 index.js 带 nonce，其 import 的分片被信任）。
+   *          'strict-dynamic'（入口 index.js 带 nonce，其 import 的分片被信任）；
+   *          img-src 放行 webview 源 —— 树视图的文件图标是打包在本扩展 resources/ 下的 SVG。
    *          JS/CSS 地址用 asWebviewUri 转换自 webview-ui/dist/assets/。
    */
   private _getHtmlForWebview(webview: vscode.Webview): string {
@@ -166,6 +180,7 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'none';
                  style-src ${webview.cspSource};
+                 img-src ${webview.cspSource};
                  script-src 'nonce-${nonce}' 'strict-dynamic';" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="${styleUri}" />
@@ -198,6 +213,7 @@ export const chatWebviewRegistration: Registration = {
         }
       )
     );
+
     return REGISTRATION_ID;
   }
 };

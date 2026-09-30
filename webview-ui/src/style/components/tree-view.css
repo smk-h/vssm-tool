@@ -1,0 +1,72 @@
+/**
+ * @file TreeView（通用树）样式
+ * @see src/components/tree-view.tsx
+ */
+
+.vssm-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.vssm-tree-item {
+  margin: 0;
+  padding: 0;
+}
+
+.vssm-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding-right: 6px;
+  /* 缩进由组件传入的层级变量驱动，视觉规则仍集中在这里 */
+  padding-left: calc(4px + var(--vssm-depth, 0) * 12px);
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--vscode-foreground);
+}
+.vssm-tree-row:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.vssm-tree-row:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+.vssm-tree-row svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+/* 折叠箭头槽位：叶子节点也占位，保证同层图标左对齐 */
+.vssm-tree-twisty {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vssm-tree-twisty svg {
+  transition: transform 0.1s ease;
+}
+/* 展开态：右向箭头转成下向 */
+.vssm-tree-item[aria-expanded='true'] > .vssm-tree-row .vssm-tree-twisty svg {
+  transform: rotate(90deg);
+}
+
+.vssm-tree-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vssm-tree-desc {
+  margin-left: 6px;
+  font-size: 0.9em;
+  opacity: 0.6;
+}
+
+/* 空列表 / 读取中的提示文案（TemplatesView 用） */
+.vssm-tree-status {
+  padding: 12px;
+  opacity: 0.7;
+}

@@ -3,8 +3,8 @@
  * @module webview/registry
  * @details 各 provider 实现统一的 SnapshottableProvider 契约并调用
  *          registerSnapshottableProvider() 挂进来，chat webview 按消息按需取
- *          getSnapshot()，渲染进 React 导航栏，无需改动 extension.ts 注册流程。
- *          当前未注册任何 provider（导航栏只剩 Chat），此契约保留作为扩展点。
+ *          getSnapshot()，渲染进 React 标签栏，无需改动 extension.ts 注册流程。
+ *          已注册：templates-view（out/template 目录树）。
  */
 
 /**
@@ -15,7 +15,7 @@ export interface SnapNode {
   id: string;
   label: string;
   description?: string;
-  /** @brief 归一化图标 key（如 'group' | 'item'），webview 侧自行映射 */
+  /** @brief 归一化图标 key（如 'folder' | 'file'），webview 侧自行映射 */
   icon?: string;
   collapsibleState: 'none' | 'collapsed' | 'expanded';
   children?: SnapNode[];

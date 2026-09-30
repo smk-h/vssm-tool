@@ -1,8 +1,10 @@
 /**
  * @file Codicon 图标库：图标名 → 内联 SVG
  * @module components/codicon
- * @details 路径取自 microsoft/vscode-codicons，内联 SVG 无字体依赖，
+ * @details chat / gear / close 三条路径取自 microsoft/vscode-codicons，内联 SVG 无字体依赖，
  *          观感与 VS Code 原生工具栏图标同源同款。
+ *          folder / folder-opened / file / files / chevron 是本项目自绘的**简版几何图标**（非 codicon 原图），
+ *          供文件树使用；等接入真实图标主题后，它们退化为"主题不可用"时的兜底图标。
  *          新增图标：在 ICONS 里加一项即可——box 默认 '0 0 16 16'（多数 codicon 为 16×16，
  *          少数为 24×24，如 terminal）；带镂空的图形（如齿轮）需要 evenodd: true。
  */
@@ -41,6 +43,25 @@ const ICONS = {
         d: 'M8 8.707l3.646 3.647.708-.707L8.707 8l3.647-3.646-.707-.708L8 7.293 4.354 3.646l-.707.708L7.293 8l-3.646 3.646.707.708L8 8.707z'
       }
     ]
+  },
+  /** files：模板标签页图标（两份叠放的文档） */
+  files: {
+    paths: [{ d: 'M2.5 3h5L10 5.5V13H2.5z' }, { d: 'M6 1.5h4.5L13 4v7.5H6z' }]
+  },
+  /** folder / folder-opened：目录（展开态由 views/components 的树组件切换） */
+  folder: {
+    paths: [{ d: 'M2 3h4.3l1.3 1.6H14V13H2z' }]
+  },
+  'folder-opened': {
+    paths: [{ d: 'M2 3h4.3l1.3 1.6H13l1 1.4H3.8L2 13z' }]
+  },
+  /** file：文件 */
+  file: {
+    paths: [{ d: 'M4 1.5h5.2L12.5 4.7V14.5H4z' }]
+  },
+  /** chevron：树折叠箭头，右向三角；展开时由 CSS 旋转 90° 指向下方 */
+  chevron: {
+    paths: [{ d: 'M6 3.5l5 4.5-5 4.5z' }]
   }
 } satisfies Record<string, IconSpec>;
 

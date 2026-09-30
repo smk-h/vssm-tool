@@ -5,7 +5,7 @@
  *          两个方向各一个联合类型——新增消息时只在这里加一个成员，两端即刻受类型约束，
  *          不再靠 `data.type === '...'` 字符串硬比对。
  *          扩展侧已实现下列全部消息；webview 侧目前用到 ready / sendMessage / requestViewList /
- *          requestExtensionInfo，其余为已对齐的契约预留。
+ *          requestExtensionInfo / requestFileIcons / requestSnapshot，其余为已对齐的契约预留。
  */
 
 /** @brief 导航栏一个视图入口（扩展侧 viewList 的下发项） */
@@ -40,6 +40,13 @@ export interface ExtensionInfo {
 }
 
 /**
+ * @brief 打包内置的文件图标集
+ * @details key 见扩展侧 src/webview/file-icons.ts 的 FILE_ICON_FILES；
+ *          值是 webview 可访问的 SVG 地址。图标不随用户的图标主题/配色主题变化。
+ */
+export type FileIconSet = Record<string, string>;
+
+/**
  * @brief 树节点快照（扩展侧 SnapshottableProvider.getSnapshot() 的产物）
  * @details 与扩展侧 src/webview/registry.ts 的 SnapNode 逐字段对齐。
  */
@@ -62,6 +69,7 @@ export type WebviewMessage =
   | { type: 'sendMessage'; value: string }
   | { type: 'requestViewList' }
   | { type: 'requestExtensionInfo' }
+  | { type: 'requestFileIcons' }
   | { type: 'requestSnapshot'; viewId: string }
   | { type: 'nodeCommand'; command: string; args?: unknown[] }
   | { type: 'refreshView'; viewId: string };
@@ -72,4 +80,5 @@ export type ExtensionMessage =
   | { type: 'reply'; value: string }
   | { type: 'viewList'; views: ViewListEntry[] }
   | ({ type: 'extensionInfo' } & ExtensionInfo)
+  | { type: 'fileIcons'; icons: FileIconSet }
   | { type: 'snapshot'; viewId: string; tree: SnapNode[] };

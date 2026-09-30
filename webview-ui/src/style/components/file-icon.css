@@ -1,0 +1,18 @@
+/**
+ * @file FileIcon（文件/目录图标）样式
+ * @see src/components/file-icon.tsx
+ * @details 图标是打包内置的彩色 SVG，亮暗色主题下同一套（与资源管理器一致），
+ *          不需要针对配色做切换。
+ */
+
+.vssm-file-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  object-fit: contain;
+}
+
+/* 图标集未就绪时的占位，撑住布局避免图标到位时整行跳动 */
+.vssm-file-icon-empty {
+  display: inline-block;
+}

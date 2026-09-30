@@ -17,8 +17,11 @@
 
 @import './base.css';
 @import './controls.css';
+@import './components/file-icon.css';
 @import './components/icon-button.css';
 @import './components/tabs.css';
 @import './components/top-bar.css';
+@import './components/tree-view.css';
 @import './components/welcome.css';
 @import './views/chat-view.css';
+@import './views/templates-view.css';
