@@ -61,7 +61,22 @@ npm run postbuild # 将 src/template/ 整体拷贝到 out/template/
 npm run build:webview # Vite 构建，产物输出到 webview-ui/dist/
 ```
 
-#### 3.3 测试与代码检查
+#### 3.3 一键启动扩展开发宿主（免调试器）
+
+```bash
+npm run dev:host # 构建 webview + 编译主工程 + 同步模板，然后拉起扩展开发宿主
+```
+
+链式执行 webview 构建 → tsc 编译 → 模板拷贝，完成后通过 `code --extensionDevelopmentPath` 打开一个加载本仓库扩展的新窗口——效果等同 F5，但**不挂调试器**（需 `code` 命令在 PATH 中）。
+
+- 缺省打开测试夹具 `src/test/fixtures/demo-workspace` 作为工作区：该目录是专供命令验证的沙箱（除 sample.txt 外均被 gitignore 忽略），在里面跑 initProject 也不会弄脏仓库
+- 想换其它工作区目录时追加一个参数（相对路径按调用方 shell 的 cwd 解析）：
+
+```bash
+npm run dev:host -- D:\scratch
+```
+
+#### 3.4 测试与代码检查
 
 ```bash
 npm test             # 编译 + lint 后在 Extension Host 中运行集成测试
@@ -69,7 +84,7 @@ npm run lint         # 仅执行 eslint 检查
 npm run format:fix   # prettier 格式化
 ```
 
-#### 3.4 在 CNB 云原生开发环境下启动调试
+#### 3.5 在 CNB 云原生开发环境下启动调试
 
 CNB 云开发环境（`.cnb.yml` 的 `vscode` 目标）是**浏览器里运行的 code-server**，扩展调试有两条路径，按需选择：
 
@@ -112,7 +127,7 @@ npm run vsix:build # 生成 vssm-tool-<版本号>.vsix
 该命令会自动链式执行 `vscode:prepublish` 钩子（Webview 构建 → 主工程编译 → 模板资源拷贝），无需手工前置步骤。产物可直接本地安装验证：
 
 ```bash
-code --install-extension vssm-tool-1.1.0.vsix
+code --install-extension vssm-tool-<版本号>.vsix
 ```
 
 如需清理历史安装包：
@@ -158,14 +173,17 @@ npx @vscode/vsce publish # 需先设置 VSCE_PAT 环境变量（市场发布令�
 
 ```json
 
-"generateClangFormat.customTemplatePath": ""     // .clang-format 自定义模板文件路径
+"generateClangFormat.template": "default"         // .clang-format 生成时使用的模板，"default" 为内置模板
+"generateClangFormat.customTemplatePath": ""      // .clang-format 自定义模板文件路径（优先于 template）
 
-"generateEditorConfig.customTemplatePath": ""    // .editconfig 自定义模板文件路径
-"generateEditorConfig.generateAuto": false       // 是否自动创建
+"generateEditorConfig.generateAuto": false        // 是否按当前编辑器设置自动创建
+"generateEditorConfig.template": "default"        // .editorconfig 生成时使用的模板，"default" 为内置模板
+"generateEditorConfig.customTemplatePath": ""     // .editorconfig 自定义模板文件路径（优先于 template）
 
-"generateWorkspaceConfig.customTemplatePath": "" // .code-workspace 自定义模板文件路径
+"generateWorkspaceConfig.template": "default"     // .code-workspace 生成时使用的模板，"default" 为内置模板
+"generateWorkspaceConfig.customTemplatePath": ""  // .code-workspace 自定义模板文件路径（优先于 template）
 
-"runNpmTask.npmTaskSource": "package.json"
+"runNpmTask.npmTaskSource": "package.json"        // npm 任务来源，可选 "tasks.json" | "package.json"
 ```
 
 
