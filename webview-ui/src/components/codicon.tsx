@@ -1,7 +1,7 @@
 /**
  * @file Codicon 图标库：图标名 → 内联 SVG
  * @module components/codicon
- * @details chat / gear / close 三条路径取自 microsoft/vscode-codicons，内联 SVG 无字体依赖，
+ * @details chat / gear / close / collapse-all 四条路径取自 microsoft/vscode-codicons，内联 SVG 无字体依赖，
  *          观感与 VS Code 原生工具栏图标同源同款。
  *          folder / folder-opened / file / files / chevron 是本项目自绘的**简版几何图标**（非 codicon 原图），
  *          供文件树使用；等接入真实图标主题后，它们退化为"主题不可用"时的兜底图标。
@@ -48,6 +48,15 @@ const ICONS = {
   files: {
     paths: [{ d: 'M2.5 3h5L10 5.5V13H2.5z' }, { d: 'M6 1.5h4.5L13 4v7.5H6z' }]
   },
+  /** agent：agent 标签页图标（简版机器人头；evenodd 在面部镂出眼睛与嘴） */
+  agent: {
+    paths: [
+      {
+        evenodd: true,
+        d: 'M3 5h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM7.5 1h1v3h-1zM6 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM10 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM5.5 10.5h5v1h-5z'
+      }
+    ]
+  },
   /** folder / folder-opened：目录（展开态由 views/components 的树组件切换） */
   folder: {
     paths: [{ d: 'M2 3h4.3l1.3 1.6H14V13H2z' }]
@@ -62,6 +71,16 @@ const ICONS = {
   /** chevron：树折叠箭头，右向三角；展开时由 CSS 旋转 90° 指向下方 */
   chevron: {
     paths: [{ d: 'M6 3.5l5 4.5-5 4.5z' }]
+  },
+  /** collapse-all：全部折叠——路径取自 microsoft/vscode-codicons，与资源管理器完全同款 */
+  'collapse-all': {
+    paths: [
+      { d: 'M9 9H4v1h5V9z' },
+      {
+        evenodd: true,
+        d: 'M5 3l1-1h7l1 1v7l-1 1h-2v2l-1 1H3l-1-1V6l1-1h2V3zm1 2h4l1 1v4h2V3H6v2zm4 1H3v7h7V6z'
+      }
+    ]
   }
 } satisfies Record<string, IconSpec>;
 

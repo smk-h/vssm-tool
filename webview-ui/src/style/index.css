@@ -24,5 +24,6 @@
 @import './components/top-bar.css';
 @import './components/tree-view.css';
 @import './components/welcome.css';
+@import './views/agents-view.css';
 @import './views/chat-view.css';
 @import './views/templates-view.css';

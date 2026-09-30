@@ -4,7 +4,7 @@
  * @details 各 provider 实现统一的 SnapshottableProvider 契约并调用
  *          registerSnapshottableProvider() 挂进来，chat webview 按消息按需取
  *          getSnapshot()，渲染进 React 标签栏，无需改动 extension.ts 注册流程。
- *          已注册：templates-view（out/template 目录树）。
+ *          已注册：templates-view（out/template 目录树）、agent-view（家目录 agent 配置）。
  */
 
 /**

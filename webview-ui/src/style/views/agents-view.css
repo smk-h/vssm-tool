@@ -1,9 +1,9 @@
 /**
- * @file TemplatesView（模板目录标签页）样式
- * @see src/views/templates/templates-view.tsx
+ * @file AgentsView（agent 配置标签页）样式
+ * @see src/views/agents/agents-view.tsx
  */
 
-.vssm-templates {
+.vssm-agents {
   /* 滚动由树外壳（.vssm-tree-shell）负责，这里只提供高度与留白 */
   flex: 1;
   min-height: 0;

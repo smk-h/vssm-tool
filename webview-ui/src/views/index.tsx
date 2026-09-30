@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { AgentsView } from '@/views/agents/agents-view';
 import { ChatView } from '@/views/chat/chat-view';
 import { TemplatesView } from '@/views/templates/templates-view';
 
@@ -13,5 +14,6 @@ import { TemplatesView } from '@/views/templates/templates-view';
  */
 export const VIEW_COMPONENTS: Record<string, ComponentType> = {
   chat: ChatView,
-  'vssm-tool-templates': TemplatesView
+  'vssm-tool-templates': TemplatesView,
+  'vssm-tool-agents': AgentsView
 };

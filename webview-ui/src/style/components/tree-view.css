@@ -8,6 +8,25 @@
   margin: 0;
   padding: 0;
 }
+
+/* 树的外壳：工具行 + 滚动区。滚动收在树内部，"全部折叠"工具行保持可见 */
+.vssm-tree-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.vssm-tree-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 4px 2px;
+}
+.vssm-tree-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
 .vssm-tree-item {
   margin: 0;
   padding: 0;
