@@ -21,12 +21,4 @@ export interface ViewListEntry {
   id: string;
   label: string;
   icon?: string;
-  /** @brief 是否支持在 webview 内 CRUD 写回 */
-  editable?: boolean;
 }
-
-/** @brief 节点操作（增/改/删），与扩展侧 ViewAction 对齐 */
-export type ViewAction =
-  | { kind: 'add'; parentId: string | null; label: string }
-  | { kind: 'edit'; id: string; label: string }
-  | { kind: 'delete'; id: string };

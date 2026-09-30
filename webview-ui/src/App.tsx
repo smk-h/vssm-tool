@@ -15,7 +15,7 @@ export default function App() {
   const [railOpen, setRailOpen] = useState(false);
   /** @brief 当前视图：'chat' 或某个 viewId */
   const [mode, setMode] = useState<string>('chat');
-  const [views, setViews] = useState<ViewListEntry[]>([{ id: 'chat', label: 'Chat', icon: 'chat', editable: false }]);
+  const [views, setViews] = useState<ViewListEntry[]>([{ id: 'chat', label: 'Chat', icon: 'chat' }]);
   const [snapshots, setSnapshots] = useState<Record<string, SnapNode[]>>({});
 
   // 挂载时拉导航栏列表；监听 viewList / snapshot
@@ -52,7 +52,6 @@ export default function App() {
   };
 
   const currentLabel = views.find((v) => v.id === mode)?.label ?? 'Chat';
-  const currentEditable = views.find((v) => v.id === mode)?.editable ?? false;
 
   return (
     <div className={`app${railOpen ? ' rail-open' : ''}`}>
@@ -64,13 +63,7 @@ export default function App() {
           onToggleRail={() => setRailOpen((o) => !o)}
           onRefresh={mode !== 'chat' ? refreshCurrent : undefined}
         />
-        <div className="content">
-          {mode === 'chat' ? (
-            <ChatView />
-          ) : (
-            <TreeView viewId={mode} tree={snapshots[mode]} editable={currentEditable} />
-          )}
-        </div>
+        <div className="content">{mode === 'chat' ? <ChatView /> : <TreeView tree={snapshots[mode]} />}</div>
       </main>
     </div>
   );

@@ -2,8 +2,6 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { logToVssmToolChannel, logErrorToVssmToolChannel } from './helpers/utils';
-import { registerHelloWorldCommand } from './cmd/helloworld';
-import { registerCursorPositionCommand } from './cmd/cursor-position';
 import {
   registerGenerateConfigCommand,
   GenerateEditorConfigCommand,
@@ -19,12 +17,6 @@ import {
 } from './cmd/addToIgnore';
 import { registerMarkdownHoverProvider } from './language-features/markdownHover';
 import { registerPackageLinkProvider } from './language-features/packageLinkProvider';
-import { registerConfigView } from './views/config';
-import { registerDefaultTemplateView } from './views/default-template';
-import { registerNodeDependenciesView } from './views/node-dependencies';
-import { registerCommandsView } from './views/commands';
-import { registerFixedDataProvider } from './views/fixed-data';
-import { registerVSCodeSettingsView } from './views/vscode-settings';
 import { registerChatWebviewView } from './views/chat-webview';
 import { registerInitProjectCommand } from './cmd/init-project';
 
@@ -39,14 +31,6 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Define all commands with their registration functions and enabled status
   const commands = {
-    helloWorld: {
-      register: registerHelloWorldCommand,
-      enabled: true
-    },
-    cursorPosition: {
-      register: registerCursorPositionCommand,
-      enabled: true
-    },
     generateEditorConfig: {
       register: (ctx: vscode.ExtensionContext) => registerGenerateConfigCommand(ctx, GenerateEditorConfigCommand),
       enabled: true
@@ -81,30 +65,6 @@ export function activate(context: vscode.ExtensionContext) {
     },
     packageLink: {
       register: registerPackageLinkProvider,
-      enabled: true
-    },
-    configView: {
-      register: registerConfigView,
-      enabled: true
-    },
-    defaultTemplateView: {
-      register: registerDefaultTemplateView,
-      enabled: true
-    },
-    nodeDependenciesView: {
-      register: registerNodeDependenciesView,
-      enabled: true
-    },
-    commandsView: {
-      register: registerCommandsView,
-      enabled: true
-    },
-    fixedData: {
-      register: registerFixedDataProvider,
-      enabled: true
-    },
-    vscodeSettingsView: {
-      register: registerVSCodeSettingsView,
       enabled: true
     },
     chatWebviewView: {

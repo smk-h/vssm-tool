@@ -3,7 +3,6 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { computeAdjustedColumn } from '../cmd/cursor-position';
 import { getPackageJsonScripts, getTasksJsonTasks } from '../cmd/npm-run-task';
 import {
   applyLatestVersions,
@@ -21,32 +20,6 @@ import {
 function fakeFolder(fsPath: string): vscode.WorkspaceFolder {
   return { uri: vscode.Uri.file(fsPath), name: path.basename(fsPath), index: 0 };
 }
-
-suite('computeAdjustedColumn（光标列换算）', () => {
-  test('无 tab 时逐字符累加', () => {
-    assert.strictEqual(computeAdjustedColumn('abc', 2, 4), 2);
-    assert.strictEqual(computeAdjustedColumn('abc', 0, 4), 0);
-  });
-
-  test('tab 展开到下一个制表位（tabSize=4）', () => {
-    // "a\tb"：a 占 1 列，tab 从第 1 列展开到第 4 列
-    assert.strictEqual(computeAdjustedColumn('a\tb', 2, 4), 4);
-    // 光标停在 tab 上（character 指向 tab 本身）
-    assert.strictEqual(computeAdjustedColumn('a\tb', 1, 4), 1);
-  });
-
-  test('连续 tab 与混合缩进', () => {
-    // "\t\tX"：两个 tab 各展开到 4、8 列
-    assert.strictEqual(computeAdjustedColumn('\t\tX', 2, 4), 8);
-    // "  \tX"：2 空格 + tab 补齐到 4 列
-    assert.strictEqual(computeAdjustedColumn('  \tX', 3, 4), 4);
-  });
-
-  test('tabSize=8 的对齐', () => {
-    assert.strictEqual(computeAdjustedColumn('\tX', 1, 8), 8);
-    assert.strictEqual(computeAdjustedColumn('       \tX', 8, 8), 8); // 7 空格 + tab → 第 8 列
-  });
-});
 
 suite('getPackageJsonScripts（npm 脚本读取）', () => {
   let tmpRoot: string;

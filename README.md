@@ -165,9 +165,6 @@ npx @vscode/vsce publish # 需先设置 VSCE_PAT 环境变量（市场发布令�
 
 "generateWorkspaceConfig.customTemplatePath": "" // .code-workspace 自定义模板文件路径
 
-"getCursorPosition.showMenuEntry": true
-"helloWorld.showMenuEntry": true
-
 "runNpmTask.npmTaskSource": "package.json"
 ```
 

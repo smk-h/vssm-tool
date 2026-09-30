@@ -1,23 +1,18 @@
 import { useState } from 'react';
-import type { SnapNode, ViewAction } from '../types';
+import type { SnapNode } from '../types';
 import { vscode } from '../vscode';
 
 /**
- * @brief 通用树渲染器：把 SnapNode[] 递归渲染成可折叠树
- * @details editable=true 时每个节点行尾提供 ➕新增子项 / ✎重命名 / 🗑删除，
- *          增改用行内 <input>（Enter 提交、Esc/失焦取消），操作经 viewAction 发给扩展，
- *          扩展应用后回推新 snapshot，本组件由新 tree 重渲染。
+ * @brief 通用树渲染器：把 SnapNode[] 递归渲染成可折叠的只读树
+ * @details 节点带 command 时点击触发（回传 nodeCommand 给扩展 executeCommand 执行）；
+ *          带子节点时点击展开/折叠。
  */
 interface TreeViewProps {
-  viewId: string;
   tree: SnapNode[] | undefined;
-  editable: boolean;
 }
 
-export default function TreeView({ viewId, tree, editable }: TreeViewProps) {
+export default function TreeView({ tree }: TreeViewProps) {
   const [expanded, setExpanded] = useState<Set<string>>(() => collectExpanded(tree));
-  const [rootAdding, setRootAdding] = useState(false);
-  const [rootValue, setRootValue] = useState('');
 
   // tree 变化（新 snapshot）时不重置 expanded —— 保留用户的展开态
   const toggle = (id: string) =>
@@ -31,8 +26,6 @@ export default function TreeView({ viewId, tree, editable }: TreeViewProps) {
       return next;
     });
 
-  const post = (action: ViewAction) => vscode.postMessage({ type: 'viewAction', viewId, action });
-
   if (!tree) {
     return <div className="tree-empty">加载中…</div>;
   }
@@ -40,39 +33,8 @@ export default function TreeView({ viewId, tree, editable }: TreeViewProps) {
   return (
     <div className="tree">
       {tree.map((n) => (
-        <TreeNode key={n.id} node={n} depth={0} expanded={expanded} toggle={toggle} editable={editable} post={post} />
+        <TreeNode key={n.id} node={n} depth={0} expanded={expanded} toggle={toggle} />
       ))}
-      {editable && (
-        <div className="tree-root-add">
-          {rootAdding ? (
-            <input
-              className="tree-input"
-              autoFocus
-              placeholder="新根节点名称…"
-              value={rootValue}
-              onChange={(e) => setRootValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && rootValue.trim()) {
-                  post({ kind: 'add', parentId: null, label: rootValue.trim() });
-                  setRootValue('');
-                  setRootAdding(false);
-                } else if (e.key === 'Escape') {
-                  setRootValue('');
-                  setRootAdding(false);
-                }
-              }}
-              onBlur={() => {
-                setRootValue('');
-                setRootAdding(false);
-              }}
-            />
-          ) : (
-            <button className="tree-root-add-btn" onClick={() => setRootAdding(true)}>
-              + 新增根节点
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -97,31 +59,16 @@ interface TreeNodeProps {
   depth: number;
   expanded: Set<string>;
   toggle: (id: string) => void;
-  editable: boolean;
-  post: (action: ViewAction) => void;
 }
 
-function TreeNode({ node, depth, expanded, toggle, editable, post }: TreeNodeProps) {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(node.label);
-  const [adding, setAdding] = useState(false);
-  const [addValue, setAddValue] = useState('');
-
+function TreeNode({ node, depth, expanded, toggle }: TreeNodeProps) {
   const hasChildren = !!(node.children && node.children.length > 0);
   const isOpen = expanded.has(node.id);
   /** @brief 可点击：有子节点（展开/折叠）或带 command（触发动作） */
-  const clickable = !editing && (hasChildren || !!node.command);
-
-  const startEdit = () => {
-    setEditValue(node.label);
-    setEditing(true);
-  };
+  const clickable = hasChildren || !!node.command;
 
   /** @brief 单击 label：有子节点则展开/折叠，否则触发节点 command */
   const onLabelClick = () => {
-    if (editing) {
-      return;
-    }
     if (hasChildren) {
       toggle(node.id);
     } else if (node.command) {
@@ -139,87 +86,19 @@ function TreeNode({ node, depth, expanded, toggle, editable, post }: TreeNodePro
           {hasChildren ? (isOpen ? '▾' : '▸') : '•'}
         </span>
 
-        {editing ? (
-          <input
-            className="tree-input"
-            autoFocus
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && editValue.trim()) {
-                post({ kind: 'edit', id: node.id, label: editValue.trim() });
-                setEditing(false);
-              } else if (e.key === 'Escape') {
-                setEditing(false);
-              }
-            }}
-            onBlur={() => setEditing(false)}
-          />
-        ) : (
-          <span
-            className={`tree-label${clickable ? ' act' : ''}`}
-            onClick={clickable ? onLabelClick : undefined}
-            onDoubleClick={editable ? startEdit : undefined}
-            role={clickable ? 'button' : undefined}>
-            {node.label}
-            {node.description && <span className="tree-desc">{node.description}</span>}
-          </span>
-        )}
-
-        {editable && !editing && (
-          <span className="tree-actions">
-            <button className="tree-act" title="新增子项" onClick={() => setAdding((a) => !a)}>
-              ＋
-            </button>
-            <button className="tree-act" title="重命名" onClick={startEdit}>
-              ✎
-            </button>
-            <button className="tree-act" title="删除" onClick={() => post({ kind: 'delete', id: node.id })}>
-              🗑
-            </button>
-          </span>
-        )}
+        <span
+          className={`tree-label${clickable ? ' act' : ''}`}
+          onClick={clickable ? onLabelClick : undefined}
+          role={clickable ? 'button' : undefined}>
+          {node.label}
+          {node.description && <span className="tree-desc">{node.description}</span>}
+        </span>
       </div>
-
-      {adding && (
-        <div className="tree-row tree-add-row" style={{ paddingLeft: (depth + 1) * 14 }}>
-          <span className="tree-toggle">•</span>
-          <input
-            className="tree-input"
-            autoFocus
-            placeholder="新子项名称…"
-            value={addValue}
-            onChange={(e) => setAddValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && addValue.trim()) {
-                post({ kind: 'add', parentId: node.id, label: addValue.trim() });
-                setAddValue('');
-                setAdding(false);
-              } else if (e.key === 'Escape') {
-                setAddValue('');
-                setAdding(false);
-              }
-            }}
-            onBlur={() => {
-              setAddValue('');
-              setAdding(false);
-            }}
-          />
-        </div>
-      )}
 
       {hasChildren &&
         isOpen &&
         node.children!.map((c) => (
-          <TreeNode
-            key={c.id}
-            node={c}
-            depth={depth + 1}
-            expanded={expanded}
-            toggle={toggle}
-            editable={editable}
-            post={post}
-          />
+          <TreeNode key={c.id} node={c} depth={depth + 1} expanded={expanded} toggle={toggle} />
         ))}
     </div>
   );

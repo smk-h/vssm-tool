@@ -26,14 +26,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "vssm-tool.helloWorld",
-        "title": "Hello World"
-      },
-      {
-        "command": "vssm-tool.getCursorPosition",
-        "title": "get cursor position"
-      },
-      {
         "command": "vssm-tool.generateEditorConfig",
         "title": "generate .editorconfig here"
       },
@@ -81,16 +73,6 @@
     "configuration": {
       "title": "VSSM-Tool",
       "properties": {
-        "getCursorPosition.showMenuEntry": {
-          "type": "boolean",
-          "default": false,
-          "description": "Show the 'get cursor position' entry in the context menu of the Explorer view."
-        },
-        "helloWorld.showMenuEntry": {
-          "type": "boolean",
-          "default": false,
-          "description": "Show the 'Hello World' entry in the context menu of the Explorer view."
-        },
         "generateEditorConfig.generateAuto": {
           "type": "boolean",
           "default": false,
@@ -164,16 +146,6 @@
       ],
       "vssm-tool.menu": [
         {
-          "command": "vssm-tool.helloWorld",
-          "group": "1_commands@1",
-          "when": "config.helloWorld.showMenuEntry"
-        },
-        {
-          "command": "vssm-tool.getCursorPosition",
-          "group": "1_commands@2",
-          "when": "config.getCursorPosition.showMenuEntry"
-        },
-        {
           "command": "vssm-tool.addToPrettierIgnore",
           "group": "2_commands@1"
         },
@@ -220,14 +192,6 @@
         }
       ]
     },
-    "keybindings": [
-      {
-        "command": "vssm-tool.helloWorld",
-        "key": "ctrl+alt+f10",
-        "mac": "cmd+alt+f10",
-        "when": "editorTextFocus"
-      }
-    ],
     "viewsContainers": {
       "activitybar": [
         {

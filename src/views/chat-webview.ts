@@ -5,40 +5,14 @@
  * @details 1) 实现 WebviewViewProvider，resolveWebviewView 中注入 HTML 壳
  *          2. 开启 enableScripts，建立 localResourceRoots 白名单
  *          3. 通过 webview.postMessage / onDidReceiveMessage 做扩展 ⇄ 页面 双向通信
- *          消息协议（页面→扩展）：ready / sendMessage / requestViewList / requestSnapshot / viewAction / nodeCommand / refreshView
+ *          消息协议（页面→扩展）：ready / sendMessage / requestViewList / requestSnapshot / nodeCommand / refreshView
  *          消息协议（扩展→页面）：reply / info / viewList / snapshot
  */
 
 import * as vscode from 'vscode';
 import { logToVssmToolChannel } from '../helpers/utils';
 import { getNonce, getUri } from '../helpers/webview';
-import { treeViewRegistry, type ViewAction } from './registry';
-
-/**
- * @brief 导航栏展示用的视图标签映射（viewId → 友好名）
- * @details Chat 作为默认视图常驻首项；后续接入更多 provider 在此补充标签。
- */
-const VIEW_LABELS: Record<string, string> = {
-  'vssm-tool-fixed-data': 'Fixed Data',
-  'vssm-tool-cmd': 'Commands',
-  'vssm-tool-config': 'Config',
-  'vssm-tool-default-template': 'Templates',
-  'vssm-tool-vscode-settings': 'VSCode Settings',
-  'vssm-tool-node-dependencies': 'Dependencies'
-};
-
-/**
- * @brief 导航栏图标 key 映射（viewId → icon key，webview 侧 NavRow 自行映射成 glyph）
- * @details 未命中者回退 'tree'；chat 固定 'chat'。
- */
-const VIEW_ICONS: Record<string, string> = {
-  'vssm-tool-fixed-data': 'tree',
-  'vssm-tool-cmd': 'cmd',
-  'vssm-tool-config': 'settings',
-  'vssm-tool-default-template': 'file',
-  'vssm-tool-vscode-settings': 'tasklist',
-  'vssm-tool-node-dependencies': 'dep'
-};
+import { treeViewRegistry } from './registry';
 
 /**
  * @brief 聊天 Webview View 提供者
@@ -117,12 +91,11 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
       // 页面请求导航栏视图列表：Chat 常驻首项 + registry 中所有 provider
       case 'requestViewList': {
         const views = [
-          { id: 'chat', label: 'Chat', icon: 'chat', editable: false },
+          { id: 'chat', label: 'Chat', icon: 'chat' },
           ...Array.from(treeViewRegistry.values()).map((p) => ({
             id: p.viewId,
-            label: VIEW_LABELS[p.viewId] ?? p.viewId,
-            icon: VIEW_ICONS[p.viewId] ?? 'tree',
-            editable: typeof p.applyAction === 'function'
+            label: p.viewId,
+            icon: 'tree'
           }))
         ];
         this.postMessageToWebview({ type: 'viewList', views });
@@ -152,17 +125,6 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
         if (provider) {
           // 有 refresh() 则刷新数据源；无则 getSnapshot 本身即为最新（如依赖树）
           provider.refresh?.();
-          this.postMessageToWebview({ type: 'snapshot', viewId, tree: provider.getSnapshot() });
-        }
-        break;
-      }
-      // 页面对某视图发起节点操作（增/改/删）；应用后回推最新快照
-      case 'viewAction': {
-        const viewId = String(data?.viewId ?? '');
-        const provider = treeViewRegistry.get(viewId);
-        const action = data?.action as ViewAction | undefined;
-        if (provider && action && typeof provider.applyAction === 'function') {
-          provider.applyAction(action);
           this.postMessageToWebview({ type: 'snapshot', viewId, tree: provider.getSnapshot() });
         }
         break;
