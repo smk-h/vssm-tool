@@ -26,7 +26,7 @@ npm run vsix:build     # package .vsix with vsce
 ### Module Layers
 
 - **`src/cmd/`** — Command handlers: `generateConfigs.ts` and `addToIgnore.ts` use generic factory functions (`registerGenerateConfigCommand()`, `registerAddToIgnoreCommand()`) that accept config objects; `npm-run-task.ts` registers the npm task runner; `init-project/` scaffolds projects from `src/template/`.
-- **`src/views/`** — The chat webview host. `chat-webview.ts` is the `WebviewViewProvider` that hosts the React UI built by `webview-ui/`; `registry.ts` defines the `SnapshottableProvider` contract (`getSnapshot()` / optional `refresh()`) plus the `treeViewRegistry` that feeds view snapshots into the webview nav rail (currently no providers are registered, so the rail shows only Chat).
+- **`src/views/`** — The chat webview host. `chat-webview.ts` is the `WebviewViewProvider` that hosts the React UI built by `webview-ui/`; `registry.ts` keeps the `SnapshottableProvider` contract (`getSnapshot()` / optional `refresh()`) and the `treeViewRegistry` as an extension point for feeding view snapshots into the webview (no providers are registered; the webview nav rail is a static single Chat entry).
 - **`src/language-features/`** — Document providers: `packageLinkProvider.ts` makes dependency names in package.json clickable to open node_modules; `markdownHover.ts` is currently disabled.
 - **`src/helpers/utils.ts`** — Shared output channel ("VSSM-Tool") with logging that auto-includes caller file:line from stack traces.
 - **`src/template/`** — Static scaffolding templates (`c-vscode/`, `cnb/`, `npm-package/`) copied into user workspaces by `initProject.ts`; shared default configs live in `default/DefaultTemplate.*`.

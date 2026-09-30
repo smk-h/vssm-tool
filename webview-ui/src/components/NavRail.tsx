@@ -1,17 +1,14 @@
 import type { ReactNode } from 'react';
-import type { ViewListEntry } from '../types';
 
 /**
  * @brief 左侧导航栏：一列视图按钮（观感对齐 VS Code Activity Bar / Roo Code）
- * @details 由 App 从 viewList 消息生成；Chat 常驻首项。图标统一使用 Codicon 内联 SVG
- *          （与 TopBar 一致，无字体依赖），与 VS Code/Roo 工具栏图标同源同款。
+ * @details 视图 provider 已全部移除，当前只保留常驻的 Chat 一项。
+ *          图标统一使用 Codicon 内联 SVG（与 TopBar 一致，无字体依赖），与 VS Code/Roo 工具栏图标同源同款。
  *          选中态采用左侧 2px 强调条 + 高亮背景 + 全亮前景，hover 用 list-hover 底色。
  */
-interface NavRailProps {
-  views: ViewListEntry[];
-  mode: string;
-  onSelect: (id: string) => void;
-}
+
+/** @brief 导航栏条目（当前仅 Chat；保留列表结构以便后续接入视图） */
+const NAV_ITEMS = [{ id: 'chat', label: 'Chat', icon: 'chat' }];
 
 /** @brief Codicon 外壳：统一 viewBox / fill / 不可聚焦，路径数据由各图标提供 */
 function Icon({ box, children }: { box: string; children: ReactNode }) {
@@ -24,8 +21,7 @@ function Icon({ box, children }: { box: string; children: ReactNode }) {
 
 /**
  * @brief 视图 icon key → Codicon 内联 SVG
- * @details key 与扩展侧 chat-webview.ts 的 VIEW_ICONS 对齐；
- *          路径取自 microsoft/vscode-codicons（comment-discussion / list-tree /
+ * @details 路径取自 microsoft/vscode-codicons（comment-discussion / list-tree /
  *          settings-gear / tasklist / file / package / terminal）。
  */
 const ICONS: Record<string, ReactNode> = {
@@ -83,24 +79,20 @@ const ICONS: Record<string, ReactNode> = {
   )
 };
 
-export default function NavRail({ views, mode, onSelect }: NavRailProps) {
+export default function NavRail() {
   return (
     <aside className="rail" role="navigation" aria-label="视图导航">
-      {views.map((v) => {
-        const active = mode === v.id;
-        return (
-          <button
-            key={v.id}
-            type="button"
-            className={`rail-btn${active ? ' active' : ''}`}
-            onClick={() => onSelect(v.id)}
-            title={v.label}
-            aria-label={v.label}
-            aria-current={active ? 'page' : undefined}>
-            {ICONS[v.icon ?? 'tree'] ?? ICONS.tree}
-          </button>
-        );
-      })}
+      {NAV_ITEMS.map((v) => (
+        <button
+          key={v.id}
+          type="button"
+          className="rail-btn active"
+          title={v.label}
+          aria-label={v.label}
+          aria-current="page">
+          {ICONS[v.icon] ?? ICONS.chat}
+        </button>
+      ))}
     </aside>
   );
 }
