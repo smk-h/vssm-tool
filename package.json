@@ -231,9 +231,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/vscode-devs/vssm-tool.git"
+    "url": "https://github.com/smk-h/vssm-tool.git"
   },
-  "homepage": "https://github.com/vscode-devs/vssm-tool/blob/master/README.md",
+  "homepage": "https://github.com/smk-h/vssm-tool/blob/master/README.md",
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",

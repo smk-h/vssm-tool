@@ -22,7 +22,7 @@
 #### 1.2 克隆仓库
 
 ```bash
-git clone https://github.com/vscode-devs/vssm-tool.git
+git clone https://github.com/smk-h/vssm-tool.git
 cd vssm-tool
 ```
 
