@@ -26,6 +26,8 @@ const MENU_PADDING = 8;
  * @brief 通用右键菜单：fixed 定位在光标处，贴近视口边缘时自动内收
  * @details 样式走 VS Code 菜单语义变量（menu.*），亮暗色自动适配。
  *          滚动监听挂在捕获阶段——树容器内部滚动也要把菜单关掉。
+ *          webview 是 iframe：点击**外部**（编辑器等）收不到 pointerdown，
+ *          必须监听自身的 blur（焦点离开 webview）与 visibilitychange（侧边栏被隐藏）才能关掉。
  */
 export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -41,15 +43,24 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
         onClose();
       }
     };
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        onClose();
+      }
+    };
     window.addEventListener('pointerdown', onPointerDown, true);
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('scroll', onClose, true);
     window.addEventListener('resize', onClose);
+    window.addEventListener('blur', onClose);
+    document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
       window.removeEventListener('pointerdown', onPointerDown, true);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('scroll', onClose, true);
       window.removeEventListener('resize', onClose);
+      window.removeEventListener('blur', onClose);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [onClose]);
 
