@@ -14,14 +14,16 @@ interface IconButtonProps {
   onClick?: () => void;
   /** @brief 是否处于激活态（切换类按钮用） */
   active?: boolean;
+  /** @brief 附加类名（如刷新进行中的 is-refreshing，供 CSS 做旋转动画） */
+  className?: string;
 }
 
 /** @brief 渲染一个图标按钮 */
-export function IconButton({ icon, label, onClick, active = false }: IconButtonProps) {
+export function IconButton({ icon, label, onClick, active = false, className }: IconButtonProps) {
   return (
     <button
       type="button"
-      className={`vssm-icon-btn${active ? ' is-active' : ''}`}
+      className={`vssm-icon-btn${active ? ' is-active' : ''}${className ? ` ${className}` : ''}`}
       title={label}
       aria-label={label}
       onClick={onClick}>

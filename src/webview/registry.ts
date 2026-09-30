@@ -7,6 +7,8 @@
  *          已注册：templates-view（out/template 目录树）、agent-view（家目录 agent 配置）。
  */
 
+import * as vscode from 'vscode';
+
 /**
  * @brief webview 侧统一树节点形状（任意 provider 快照后都长这样）
  * @details id 必须稳定（一次 snapshot 内唯一），供 webview 定位节点。
@@ -59,6 +61,15 @@ export interface SnapshottableProvider {
  * @brief 全局 provider 注册表：viewId -> SnapshottableProvider
  */
 export const treeViewRegistry = new Map<string, SnapshottableProvider>();
+
+/** @brief 数据源变更事件：参数是发生变化的 viewId（文件监听触发，host 去抖后重推快照） */
+const sourcesChangedEmitter = new vscode.EventEmitter<string>();
+export const onSourcesChanged = sourcesChangedEmitter.event;
+
+/** @brief 声明某视图的数据源已变化，host 收到后去抖并重扫重推 */
+export function notifySourcesChanged(viewId: string): void {
+  sourcesChangedEmitter.fire(viewId);
+}
 
 /**
  * @brief 注册一个可快照 provider

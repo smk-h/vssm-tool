@@ -1,10 +1,14 @@
-import { useState, type CSSProperties, type FocusEvent, type MouseEvent } from 'react';
+import { useRef, useState, type CSSProperties, type FocusEvent, type MouseEvent } from 'react';
 import { Codicon } from '@/components/codicon';
 import { ContextMenu } from '@/components/context-menu';
 import { FileIcon, type FileIconKind } from '@/components/file-icon';
 import { IconButton } from '@/components/icon-button';
+import { useExtensionMessage } from '@/hooks/use-extension-message';
 import { vscode } from '@/lib/vscode-api';
 import type { NodeContextAction, SnapNode } from '@/lib/protocol';
+
+/** @brief 手动刷新的最短旋转时长：扫描太快时旋转态可能不足一帧，保证反馈可见 */
+const MIN_REFRESH_SPIN_MS = 400;
 
 /**
  * @brief 行内重命名的控制句柄：由 TreeView 持有，正在编辑的那个 TreeItem 消费
@@ -39,6 +43,32 @@ export function TreeView({ nodes, viewId }: { nodes: SnapNode[]; viewId?: string
   const [menu, setMenu] = useState<{ node: SnapNode; x: number; y: number } | null>(null);
   /** @brief 正在进行的行内重命名（同一时刻最多一个） */
   const [rename, setRename] = useState<{ nodeId: string; value: string } | null>(null);
+  /** @brief 手动刷新进行中：图标旋转，收到该视图的新快照后停止 */
+  const [refreshing, setRefreshing] = useState(false);
+  /** @brief 停止旋转的回调（快照到达时调用）；按最短旋转时长延迟真正置停 */
+  const stopSpinRef = useRef<(() => void) | null>(null);
+
+  useExtensionMessage((message) => {
+    if (viewId && message.type === 'snapshot' && message.viewId === viewId) {
+      stopSpinRef.current?.();
+    }
+  });
+
+  /** @brief 手动刷新：请求扩展侧重扫；期间按钮旋转给出反馈（最短 MIN_REFRESH_SPIN_MS） */
+  const refresh = () => {
+    if (!viewId || refreshing) {
+      return;
+    }
+    setRefreshing(true);
+    const startedAt = Date.now();
+    stopSpinRef.current = () => {
+      stopSpinRef.current = null;
+      // 快照回来得再快也转满最短时长，否则不足一帧、用户看不到任何反馈
+      const remain = MIN_REFRESH_SPIN_MS - (Date.now() - startedAt);
+      window.setTimeout(() => setRefreshing(false), Math.max(0, remain));
+    };
+    vscode.postMessage({ type: 'refreshView', viewId });
+  };
 
   const toggle = (id: string) => {
     setExpandedIds((prev) => {
@@ -97,6 +127,14 @@ export function TreeView({ nodes, viewId }: { nodes: SnapNode[]; viewId?: string
   return (
     <div className="vssm-tree-shell">
       <div className="vssm-tree-actions">
+        {viewId && (
+          <IconButton
+            icon="refresh"
+            label="刷新"
+            className={refreshing ? 'is-refreshing' : undefined}
+            onClick={refresh}
+          />
+        )}
         <IconButton icon="collapse-all" label="全部折叠" onClick={collapseAll} />
       </div>
       <div className="vssm-tree-scroll">

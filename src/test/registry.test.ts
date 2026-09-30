@@ -1,5 +1,7 @@
 import * as assert from 'assert';
 import {
+  notifySourcesChanged,
+  onSourcesChanged,
   registerSnapshottableProvider,
   treeViewRegistry,
   type SnapNode,
@@ -7,7 +9,7 @@ import {
 } from '../webview/registry';
 
 /**
- * @file 快照注册表纯逻辑测试：不经过 UI，直接验证 provider 契约与查询语义。
+ * @file 快照注册表纯逻辑测试：不经过 UI，直接验证 provider 契约、查询语义与数据源变更事件。
  */
 
 suite('registry（provider 注册表）', () => {
@@ -24,6 +26,18 @@ suite('registry（provider 注册表）', () => {
     } finally {
       // 全局表，测试后清理避免污染其他用例
       treeViewRegistry.delete('test-fake-provider');
+    }
+  });
+
+  test('notifySourcesChanged 触发 onSourcesChanged 事件并携带 viewId', () => {
+    const received: string[] = [];
+    const subscription = onSourcesChanged((viewId) => received.push(viewId));
+    try {
+      notifySourcesChanged('test-view');
+      notifySourcesChanged('test-view-2');
+      assert.deepStrictEqual(received, ['test-view', 'test-view-2']);
+    } finally {
+      subscription.dispose();
     }
   });
 });

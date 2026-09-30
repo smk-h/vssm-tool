@@ -21,6 +21,23 @@
   justify-content: flex-end;
   padding: 0 4px 2px;
 }
+/* 手动刷新进行中：图标旋转给出反馈（尊重系统的"减少动效"设置） */
+@keyframes vssm-tree-refresh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.vssm-tree-actions .is-refreshing svg {
+  animation: vssm-tree-refresh-spin 0.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vssm-tree-actions .is-refreshing svg {
+    animation: none;
+  }
+}
 .vssm-tree-scroll {
   flex: 1;
   min-height: 0;

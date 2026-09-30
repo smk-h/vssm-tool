@@ -18,7 +18,12 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import type { Registration } from '../shared/registration';
-import { registerSnapshottableProvider, type SnapNode, type SnapshottableProvider } from './registry';
+import {
+  notifySourcesChanged,
+  registerSnapshottableProvider,
+  type SnapNode,
+  type SnapshottableProvider
+} from './registry';
 
 /** @brief 视图 id：webview 侧 views/index.tsx 的登记键，也是 requestSnapshot 的参数 */
 export const AGENT_VIEW_ID = 'vssm-tool-agents';
@@ -374,8 +379,25 @@ const REGISTRATION_ID = 'agent-view';
  */
 export const agentViewRegistration: Registration = {
   id: REGISTRATION_ID,
-  register() {
+  register(context) {
     registerSnapshottableProvider(new AgentProvider());
+
+    // 家目录各 agent 目录的文件监听：只挂注册时**已存在**的目录（VS Code 的 watcher
+    // 支持工作区外的任意目录）；之后才创建的 agent 目录需重载窗口才会被监听
+    const home = os.homedir();
+    for (const spec of AGENT_SPECS) {
+      const dir = path.join(home, spec.path);
+      if (!fs.existsSync(dir)) {
+        continue;
+      }
+      const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.Uri.file(dir), '**'));
+      const changed = () => notifySourcesChanged(AGENT_VIEW_ID);
+      watcher.onDidCreate(changed);
+      watcher.onDidChange(changed);
+      watcher.onDidDelete(changed);
+      context.subscriptions.push(watcher);
+    }
+
     return REGISTRATION_ID;
   }
 };

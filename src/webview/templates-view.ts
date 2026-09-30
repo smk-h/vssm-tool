@@ -14,7 +14,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import type { Registration } from '../shared/registration';
-import { registerSnapshottableProvider, type SnapNode, type SnapshottableProvider } from './registry';
+import {
+  notifySourcesChanged,
+  registerSnapshottableProvider,
+  type SnapNode,
+  type SnapshottableProvider
+} from './registry';
 
 /** @brief 视图 id：webview 侧 views/index.tsx 的登记键，也是 requestSnapshot 的参数 */
 export const TEMPLATES_VIEW_ID = 'vssm-tool-templates';
@@ -136,6 +141,20 @@ export const templatesViewRegistration: Registration = {
   id: REGISTRATION_ID,
   register(context) {
     registerSnapshottableProvider(new TemplatesProvider(context.asAbsolutePath('out')));
+
+    // 模板目录的文件监听：任何增删改都触发快照重推（host 侧去抖合并）
+    const templateRoot = path.join(context.asAbsolutePath('out'), 'template');
+    if (fs.existsSync(templateRoot)) {
+      const watcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(vscode.Uri.file(templateRoot), '**')
+      );
+      const changed = () => notifySourcesChanged(TEMPLATES_VIEW_ID);
+      watcher.onDidCreate(changed);
+      watcher.onDidChange(changed);
+      watcher.onDidDelete(changed);
+      context.subscriptions.push(watcher);
+    }
+
     return REGISTRATION_ID;
   }
 };

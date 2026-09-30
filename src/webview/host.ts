@@ -17,7 +17,7 @@ import { logToVssmToolChannel } from '../shared/logger';
 import type { Registration } from '../shared/registration';
 import { extractExtensionInfo, type ExtensionInfo } from './extension-info';
 import { buildFileIconUris } from './file-icons';
-import { treeViewRegistry } from './registry';
+import { onSourcesChanged, treeViewRegistry } from './registry';
 import { getNonce, getUri } from './resources';
 
 /**
@@ -265,6 +265,12 @@ export class ChatWebviewViewProvider implements vscode.WebviewViewProvider {
 /** @brief 注册标识（去重键 + 日志名） */
 const REGISTRATION_ID = 'chat-webview';
 
+/** @brief 数据源变更的重扫去抖间隔：watcher 事件常成串，合并为一次扫描 */
+const REFRESH_DEBOUNCE_MS = 300;
+
+/** @brief 各视图待执行的重扫定时器（viewId → timer），去抖用 */
+const refreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
 /**
  * @brief 聊天 Webview View 能力
  * @details 视图类型 vssm-tool-chat 与 package.json 的 views 声明保持一致。
@@ -272,15 +278,34 @@ const REGISTRATION_ID = 'chat-webview';
 export const chatWebviewRegistration: Registration = {
   id: REGISTRATION_ID,
   register(context) {
+    const chatProvider = new ChatWebviewViewProvider(
+      context.extensionUri,
+      extractExtensionInfo(context.extension.packageJSON)
+    );
+
     context.subscriptions.push(
-      vscode.window.registerWebviewViewProvider(
-        ChatWebviewViewProvider.viewType,
-        new ChatWebviewViewProvider(context.extensionUri, extractExtensionInfo(context.extension.packageJSON)),
-        {
-          // 视图隐藏时不销毁，保留输入与滚动状态（代价：常驻内存）
-          webviewOptions: { retainContextWhenHidden: true }
+      vscode.window.registerWebviewViewProvider(ChatWebviewViewProvider.viewType, chatProvider, {
+        // 视图隐藏时不销毁，保留输入与滚动状态（代价：常驻内存）
+        webviewOptions: { retainContextWhenHidden: true }
+      }),
+      // 数据源变更（文件监听触发）：去抖后重扫并重推，停留中的视图也能看到最新目录。
+      // 推送对未挂载的视图无害——webview 侧监听随视图组件走，没人听就丢弃
+      onSourcesChanged((viewId) => {
+        const pending = refreshTimers.get(viewId);
+        if (pending) {
+          clearTimeout(pending);
         }
-      )
+        refreshTimers.set(
+          viewId,
+          setTimeout(() => {
+            refreshTimers.delete(viewId);
+            const source = treeViewRegistry.get(viewId);
+            if (source) {
+              chatProvider.postMessageToWebview({ type: 'snapshot', viewId, tree: source.getSnapshot() });
+            }
+          }, REFRESH_DEBOUNCE_MS)
+        );
+      })
     );
 
     return REGISTRATION_ID;

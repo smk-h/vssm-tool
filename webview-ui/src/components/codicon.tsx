@@ -72,6 +72,15 @@ const ICONS = {
   chevron: {
     paths: [{ d: 'M6 3.5l5 4.5-5 4.5z' }]
   },
+  /** refresh：刷新——路径取自 microsoft/vscode-codicons，与资源管理器完全同款 */
+  refresh: {
+    paths: [
+      {
+        evenodd: true,
+        d: 'M4.681 3H2V2h3.5l.5.5V6H5V4a5 5 0 1 0 4.53-.761l.302-.954A6 6 0 1 1 4.681 3z'
+      }
+    ]
+  },
   /** collapse-all：全部折叠——路径取自 microsoft/vscode-codicons，与资源管理器完全同款 */
   'collapse-all': {
     paths: [
