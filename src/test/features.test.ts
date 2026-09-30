@@ -126,12 +126,15 @@ suite('generateConfigs 命令', () => {
     this.timeout(20000);
     // 前序用例已生成过 .editorconfig，这里先清理以便走"新建"分支
     cleanFixture('.editorconfig');
+    // 必须用 Global 而非 Workspace：Workspace 级写入会在夹具里创建 .vscode/settings.json，
+    // 使后续 initProject 用例的初始状态依赖执行顺序（fresh clone 会因此失败）。
+    // 测试宿主的 user-data 是隔离的（.vscode-test/），全局写入不会影响开发者本机设置。
     const original = vscode.workspace.getConfiguration('generateEditorConfig').get<boolean>('generateAuto');
 
     try {
       await vscode.workspace
         .getConfiguration('generateEditorConfig')
-        .update('generateAuto', true, vscode.ConfigurationTarget.Workspace);
+        .update('generateAuto', true, vscode.ConfigurationTarget.Global);
 
       await vscode.commands.executeCommand('vssm-tool.generateEditorConfig', vscode.Uri.file(FIXTURE_ROOT));
 
@@ -144,7 +147,7 @@ suite('generateConfigs 命令', () => {
       // 恢复原值（原值为 undefined 时相当于移除该设置）
       await vscode.workspace
         .getConfiguration('generateEditorConfig')
-        .update('generateAuto', original, vscode.ConfigurationTarget.Workspace);
+        .update('generateAuto', original, vscode.ConfigurationTarget.Global);
     }
   });
 });
@@ -199,7 +202,8 @@ suite('initProject 命令（c-vscode）', () => {
   setup(() => {
     ensureRuntimeResources();
     // 只清理文件级产物；不删 .vscode 目录 —— 工作区正被测试宿主监视，
-    // 删除后立即重建会撞上 Windows"删除挂起"句柄导致 EPERM（目录已存在时命令本就跳过）
+    // 删除后立即重建会撞上 Windows"删除挂起"句柄导致 EPERM。
+    // 该目录即便残留在场也不影响断言：copier 对已存在目录会递归补齐缺失文件。
     cleanFixture('.clang-format', '.gitignore', 'README.md');
   });
 
@@ -234,6 +238,19 @@ suite('initProject 命令（c-vscode）', () => {
     // 常规同名拷贝：.vscode 配置目录
     assert.ok(fs.existsSync(path.join(FIXTURE_ROOT, '.vscode', 'extensions.json')));
     assert.ok(fs.existsSync(path.join(FIXTURE_ROOT, '.vscode', 'settings.json')));
+  });
+
+  test('目标已存在 .vscode/ 时补齐缺失文件且不覆盖已有内容', async () => {
+    const vscodeDir = path.join(FIXTURE_ROOT, '.vscode');
+    // 制造"目录已存在但内容不全"的现场：保留用户自定义 settings.json，删掉模板要补的 extensions.json
+    fs.mkdirSync(vscodeDir, { recursive: true });
+    fs.writeFileSync(path.join(vscodeDir, 'settings.json'), '{"user":"custom"}');
+    cleanFixture('.vscode/extensions.json');
+
+    await vscode.commands.executeCommand('vssm-tool.initProject.c-vscode');
+
+    assert.ok(fs.existsSync(path.join(vscodeDir, 'extensions.json')), '目录已存在时也应补齐缺失的 extensions.json');
+    assert.strictEqual(readFixture('.vscode/settings.json'), '{"user":"custom"}', '已存在的文件不应被覆盖');
   });
 });
 

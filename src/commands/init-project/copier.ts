@@ -14,7 +14,9 @@ import type { TemplateCopyReport, TemplateCopyResult } from './types';
  *          再按 specialTargets 将指定源文件拷贝为目标名。
  *          specialTargets 的键为目标文件名，值为源文件路径（相对运行时资源根目录 out/）。
  *          若某特殊目标的源文件恰好位于 templateDir 内，则在常规遍历时自动跳过，避免重复拷贝。
- *          目标位置已存在同名文件或目录时跳过。
+ *          已存在的**文件**一律保留，不覆盖用户内容；
+ *          已存在的**目录**则递归补齐其中缺失的文件——与 package.json 的"缺则补、有不覆"语义一致，
+ *          这样用户项目里已有 .vscode/ 时仍能拿到模板中缺失的推荐配置。
  * @param templateDir 模板目录的绝对路径
  * @param targetRoot 工作区根目录的绝对路径
  * @param extensionRoot 运行时资源根目录（out/）的绝对路径（解析 specialTargets 源文件用）
@@ -50,15 +52,30 @@ export function copyTemplateTree(
     const srcPath = path.join(templateDir, entry);
     const destPath = path.join(targetRoot, entry);
 
-    if (fs.existsSync(destPath)) {
-      skipped = true;
-      report.existed.push(entry);
-      continue;
-    }
-
     try {
-      const stat = fs.statSync(srcPath);
-      if (stat.isDirectory()) {
+      const isSrcDir = fs.statSync(srcPath).isDirectory();
+      const destExists = fs.existsSync(destPath);
+
+      // 已存在的目录：递归补齐缺失文件；返回值 > 0 说明确实写入了内容
+      if (destExists && isSrcDir && fs.statSync(destPath).isDirectory()) {
+        if (copyDirSync(srcPath, destPath) > 0) {
+          copied = true;
+          report.created.push(entry);
+        } else {
+          skipped = true;
+          report.existed.push(entry);
+        }
+        continue;
+      }
+
+      // 已存在的文件（或源/目标类型不一致）：保留用户内容，整体跳过
+      if (destExists) {
+        skipped = true;
+        report.existed.push(entry);
+        continue;
+      }
+
+      if (isSrcDir) {
         copyDirSync(srcPath, destPath);
       } else {
         withFileRetry(() => fs.copyFileSync(srcPath, destPath));
@@ -100,38 +117,34 @@ export function copyTemplateTree(
 }
 
 /**
- * @brief 同步递归拷贝目录或文件
- * @details 将源路径下的目录或文件递归拷贝到目标路径。若源路径为文件则直接复制；
- *          若为目录则递归创建子目录并复制所有内容。
+ * @brief 递归拷贝目录，保留目标已有文件
+ * @details 语义与 package.json 的字段合并一致：缺则补、有不覆。
+ *          目录缺失时递归创建；同名文件已存在时保留目标内容不动。
  * @param src 源文件或源目录的绝对路径
  * @param dest 目标文件或目标目录的绝对路径
- * @return 无返回值
- * @throws 当源路径不存在时抛出Error
+ * @returns 本次实际新建的文件数（0 表示目标已完整、无需改动）
+ * @throws 当源路径不存在时抛出 Error
  */
-function copyDirSync(src: string, dest: string): void {
+function copyDirSync(src: string, dest: string): number {
   if (!fs.existsSync(src)) {
     throw new Error(`Source directory does not exist: ${src}`);
   }
 
-  const stat = fs.statSync(src);
-  if (!stat.isDirectory()) {
+  if (!fs.statSync(src).isDirectory()) {
+    // 源为文件：目标已存在则保留
+    if (fs.existsSync(dest)) {
+      return 0;
+    }
     withFileRetry(() => fs.copyFileSync(src, dest));
-    return;
+    return 1;
   }
 
   // recursive mkdir 目标已存在时安全无操作；瞬态 EPERM 由重试兜底
   withFileRetry(() => fs.mkdirSync(dest, { recursive: true }));
 
-  const entries = fs.readdirSync(src);
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry);
-    const destPath = path.join(dest, entry);
-    const entryStat = fs.statSync(srcPath);
-
-    if (entryStat.isDirectory()) {
-      copyDirSync(srcPath, destPath);
-    } else {
-      withFileRetry(() => fs.copyFileSync(srcPath, destPath));
-    }
+  let createdCount = 0;
+  for (const entry of fs.readdirSync(src)) {
+    createdCount += copyDirSync(path.join(src, entry), path.join(dest, entry));
   }
+  return createdCount;
 }

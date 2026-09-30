@@ -6,8 +6,8 @@
 /**
  * @brief 拷贝明细报告（供 postCopy 钩子区分"全新创建"与"目标已存在"）
  * @interface TemplateCopyReport
- * @property created 本次实际创建的相对路径列表
- * @property existed 因已存在而跳过的相对路径列表
+ * @property created 本次实际写入了内容的顶层条目名（已存在的目录若补齐了缺失文件也计入）
+ * @property existed 目标已存在、本次未改动的顶层条目名
  */
 export interface TemplateCopyReport {
   created: string[];
@@ -17,9 +17,9 @@ export interface TemplateCopyReport {
 /**
  * @brief 模板目录拷贝结果
  * @interface TemplateCopyResult
- * @property copied 是否至少成功拷贝了一个文件或目录
- * @property skipped 是否存在因目标已存在而被跳过的情况
- * @property report 拷贝明细（新建/已存在的相对路径）
+ * @property copied 是否至少写入了内容（新建文件，或为已存在目录补齐了缺失文件）
+ * @property skipped 是否存在目标已存在而未改动的情况
+ * @property report 拷贝明细（新建/已存在的顶层条目名）
  */
 export interface TemplateCopyResult {
   copied: boolean;
