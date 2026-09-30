@@ -199,6 +199,7 @@ function readAgentDir(home: string, spec: AgentDirSpec): SnapNode | undefined {
     children.push({
       id: `${rel}/${SKILLS_DIR}`,
       label: SKILLS_DIR,
+      path: path.join(abs, SKILLS_DIR),
       icon: 'folder',
       collapsibleState: 'collapsed',
       children: readTree(path.join(abs, SKILLS_DIR), `${rel}/${SKILLS_DIR}`, 1)
@@ -212,6 +213,7 @@ function readAgentDir(home: string, spec: AgentDirSpec): SnapNode | undefined {
       children.push({
         id: `${rel}/${dirName}`,
         label: dirName,
+        path: path.join(abs, dirName),
         icon: 'folder',
         collapsibleState: 'collapsed',
         children: readTree(path.join(abs, dirName), `${rel}/${dirName}`, 1)
@@ -229,6 +231,7 @@ function readAgentDir(home: string, spec: AgentDirSpec): SnapNode | undefined {
         children.push({
           id: `${rel}/${scan.name}`,
           label: scan.name,
+          path: path.join(abs, scan.name),
           icon: 'folder',
           collapsibleState: 'collapsed',
           children: found
@@ -254,6 +257,7 @@ function readAgentDir(home: string, spec: AgentDirSpec): SnapNode | undefined {
   return {
     id: rel,
     label: rel,
+    path: abs,
     icon: 'folder',
     // 根节点全部展开：打开标签页即可总览各 agent 的配置与技能
     collapsibleState: 'expanded',
@@ -291,6 +295,7 @@ function readTree(dir: string, prefix: string, depth: number): SnapNode[] {
       directories.push({
         id: relPath,
         label: entry.name,
+        path: path.join(dir, entry.name),
         icon: 'folder',
         collapsibleState: 'collapsed',
         children: readTree(path.join(dir, entry.name), relPath, depth + 1)
@@ -344,6 +349,7 @@ function readScanTree(dir: string, prefix: string, fileNames: ReadonlySet<string
         nodes.push({
           id: relPath,
           label: entry.name,
+          path: path.join(dir, entry.name),
           icon: 'folder',
           collapsibleState: 'collapsed',
           children: childNodes
@@ -363,6 +369,7 @@ function fileNode(absPath: string, id: string, label: string): SnapNode {
   return {
     id,
     label,
+    path: absPath,
     icon: 'file',
     collapsibleState: 'none',
     command: { command: 'vscode.open', args: [vscode.Uri.file(absPath).toString()] }

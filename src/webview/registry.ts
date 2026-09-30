@@ -17,6 +17,12 @@ export interface SnapNode {
   id: string;
   label: string;
   description?: string;
+  /**
+   * @brief 节点对应的文件系统绝对路径（可选）
+   * @details webview 悬停气泡用它展示完整路径（与资源管理器一致）；
+   *          无对应文件的纯展示节点可省略，webview 回退显示 label。
+   */
+  path?: string;
   /** @brief 归一化图标 key（如 'folder' | 'file'），webview 侧自行映射 */
   icon?: string;
   collapsibleState: 'none' | 'collapsed' | 'expanded';

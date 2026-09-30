@@ -107,6 +107,7 @@ function readDirectory(dir: string, prefix: string): SnapNode[] {
       directories.push({
         id: relPath,
         label: entry.name,
+        path: path.join(dir, entry.name),
         icon: 'folder',
         collapsibleState: entry.name === EXPANDED_BY_DEFAULT ? 'expanded' : 'collapsed',
         children: readDirectory(path.join(dir, entry.name), relPath)
@@ -117,6 +118,7 @@ function readDirectory(dir: string, prefix: string): SnapNode[] {
     files.push({
       id: relPath,
       label: entry.name,
+      path: path.join(dir, entry.name),
       icon: 'file',
       collapsibleState: 'none',
       // 点击节点在编辑器里打开：webview 原样回传，扩展侧 nodeCommand 执行 vscode.open。

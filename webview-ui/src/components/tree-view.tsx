@@ -213,7 +213,7 @@ function TreeItem({
         className="vssm-tree-row"
         role="button"
         tabIndex={0}
-        title={node.label}
+        title={node.path ?? node.label}
         style={{ '--vssm-depth': depth } as CSSProperties}
         onClick={activate}
         onContextMenu={
