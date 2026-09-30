@@ -158,7 +158,9 @@ export function TreeView({ nodes, viewId }: { nodes: SnapNode[]; viewId?: string
           y={menu.y}
           items={[
             { label: '在文件资源管理器中显示', onSelect: () => runAction('reveal') },
+            { type: 'separator' },
             { label: '复制文件绝对路径', onSelect: () => runAction('copyPath') },
+            { type: 'separator' },
             { label: '重命名', onSelect: () => runAction('rename') }
           ]}
           onClose={() => setMenu(null)}
