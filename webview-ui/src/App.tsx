@@ -11,11 +11,12 @@ const APP_TITLE = 'VSSM';
 
 /**
  * @brief 应用外壳：标题栏（+ 可展开的标签行）+ 内容区
- * @details 初始内容区只显示固定的品牌块；点设置按钮展开标签行，选中标签后内容区才切到对应功能。
+ * @details 初始内容区显示欢迎页（品牌区 + 功能入口卡片 + 快捷命令）；点设置按钮展开标签行，
+ *          选中标签后内容区切到对应功能。功能入口卡片点击 = 展开标签行并选中对应标签。
  *          设置按钮**只负责打开**（已打开时再点无动作）；关闭只能经标签行右端的 ×，
- *          会收起标签行并清除选中，回到初始的品牌块。点标签只做切换，不影响标签行开合。
+ *          会收起标签行并清除选中，回到欢迎页。点标签只做切换，不影响标签行开合。
  *          标签项由扩展侧 viewList 下发（useViews），视图组件由 views/index.tsx 登记。
- * 【加标签/视图】在 views/index.tsx 登记组件；标签会自动出现（扩展侧需有对应 provider）。
+ * 【加标签/视图】在 views/index.tsx 登记组件；标签与欢迎页卡片会自动出现（扩展侧需有对应 provider）。
  * 【加按钮】往 <TopBar actions={...}> 或 <Tabs trailing={...}> 插槽里塞 <IconButton /> 即可。
  * 【加样式】样式集中在 src/style/，类名以 vssm- 前缀，约定见 src/style/index.css。
  */
@@ -23,6 +24,12 @@ export default function App() {
   const [tabsOpen, setTabsOpen] = useState(false);
   const { views, activeId, selectView } = useViews();
   const ActiveView = activeId === null ? undefined : VIEW_COMPONENTS[activeId];
+
+  /** @brief 从欢迎页功能入口进入：展开标签行并选中对应标签 */
+  const openView = (id: string) => {
+    setTabsOpen(true);
+    selectView(id);
+  };
 
   /** @brief 收起标签行并清除选中，回到欢迎块 */
   const closeTabs = () => {
@@ -49,7 +56,7 @@ export default function App() {
       )}
       <main className="vssm-content">
         {activeId === null ? (
-          <Welcome />
+          <Welcome views={views} onOpenView={openView} />
         ) : ActiveView ? (
           <ActiveView />
         ) : (
